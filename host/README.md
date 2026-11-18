@@ -1,4 +1,4 @@
-# Deskland Windows 宿主
+# Sylvaframe Windows 宿主
 
 以 C# / .NET Framework 和 WebView2 把主题页面挂到 Windows 桌面图标层下方。
 
@@ -6,10 +6,12 @@
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File host\build.ps1
-host\bin\Deskland.exe
+host\bin\Sylvaframe.exe
 ```
 
 构建脚本使用 Windows 自带的 C# 编译器，首次从 NuGet 下载固定版本的 WebView2 开发库。依赖保存在 `host/lib/`，输出位于 `host/bin/`；二者均不提交到仓库。
+
+运行 `powershell -ExecutionPolicy Bypass -File host\build-icon.ps1` 可从原创图形重新生成 Windows 图标和设置页标识。
 
 ## 常用参数
 
@@ -29,12 +31,12 @@ host\bin\Deskland.exe
 - 前台窗口最大化或全屏时暂停；壁纸启动不抢占前台，自身、不可见及 cloaked 窗口不会误触发暂停；托盘可手动暂停与继续。设置页按程序版本刷新缓存，缩略图使用内嵌图片和真实 `<img>`。
 - Windows 11 24H2 及以后使用 Progman 分层子窗口；较早系统使用 WorkerW。
 - 每个扩展显示器分别渲染；设置预览和分享对应主显示器。系统壁纸幻灯片或 Windows 聚焦换图时可能短暂闪烁。
-- 设置保存到 `%LOCALAPPDATA%\DesklandPreview\settings.json`，日志为同目录下的 `host.log`。
+- 设置保存到 `%LOCALAPPDATA%\Sylvaframe\settings.json`，日志为同目录下的 `host.log`。
 - 不提供账号登录、购买恢复或自动检查更新；不会启动时或打开设置时联网检查新版本。
 - 分享只使用图标位置，主题页面会画示例图标和名字色块，不截取桌面窗口。
 - 主题页面改动后，使用托盘“重新载入”；宿主 C# 改动后需要退出并重新构建。
 
-安装测试可设置绝对路径环境变量 `DESKLAND_PROFILE_DIR`，隔离设置、WebView2 缓存和单实例事件；此模式跳过旧数据迁移，并禁用开机启动写入。正常启动不设置此变量，继续使用原数据目录。
+安装测试可设置绝对路径环境变量 `SYLVAFRAME_PROFILE_DIR`，隔离设置、WebView2 缓存和单实例事件；此模式跳过旧数据迁移，并禁用开机启动写入。正常启动使用 Sylvaframe 的数据目录，可从旧版森林便携程序导入设置。
 
 ## 页面通信
 

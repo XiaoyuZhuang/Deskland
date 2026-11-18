@@ -3,10 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Deskland Preview</title>
+<title>Sylvaframe</title>
+<link rel="icon" type="image/png" href="assets/sylvaframe.png">
 <!--
-  Deskland 设置窗口
-  - 由桌面宿主（host/Deskland.exe）在 WebView2 里打开；单独用浏览器打开时使用模拟数据，方便调界面
+  Sylvaframe 设置窗口
+  - 由桌面宿主（host/Sylvaframe.exe）在 WebView2 里打开；单独用浏览器打开时使用模拟数据，方便调界面
   - 主题与参数来自 themes.json，控件按清单自动生成
   - 实时预览：iframe 加载主题页面的 ?preview=1 模式，用你桌面上真实的图标位置
   - 和宿主的消息（JSON 字符串）：
@@ -44,7 +45,7 @@
 
   /* ---------- 顶栏：左边"主题"，右边开机自启 ---------- */
   .top { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 22px 32px 24px; }
-  .brand { font-size: 25px; line-height: 1; font-weight: 750; letter-spacing: -1.2px; }
+  .brand { display: flex; align-items: center; gap: 8px; font-size: 25px; line-height: 1; font-weight: 750; letter-spacing: -1.2px; }
   .top .section-title { margin: 0; color: var(--text); font-size: 13px; letter-spacing: 0; padding: 5px 0; border-bottom: 2px solid var(--text); }
   .top-left { display: flex; align-items: center; gap: 28px; }
   .top-right { display: flex; align-items: center; gap: 18px; }
@@ -274,7 +275,7 @@
 <body>
 <header class="top">
   <div class="top-left">
-    <div class="brand">Deskland Preview</div>
+    <div class="brand"><img src="assets/sylvaframe.png" width="29" height="29" alt="">Sylvaframe</div>
     <div class="section-title" data-i18n="themes">主题</div>
   </div>
   <div class="top-right">
@@ -282,7 +283,7 @@
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><circle cx="8" cy="8" r="6.2"/><path d="M1.8 8h12.4M8 1.8c1.8 1.7 2.7 3.8 2.7 6.2S9.8 12.5 8 14.2C6.2 12.5 5.3 10.4 5.3 8S6.2 3.5 8 1.8z"/></svg>
       <select id="lang" data-i18n-title="language" aria-label="Language"></select>
     </label>
-    <label class="switch-row" data-i18n-title="autostartTitle" title="开机后自动运行 Deskland">
+    <label class="switch-row" data-i18n-title="autostartTitle" title="开机后自动运行 Sylvaframe">
       <span data-i18n="autostart">开机自动启动</span><input type="checkbox" id="autostart"><i class="switch"></i>
     </label>
   </div>
@@ -327,12 +328,12 @@
 <div class="modal" id="purchaseModal" hidden role="dialog" aria-modal="true" aria-labelledby="purchaseTitle">
   <div class="box purchase-box">
     <div class="purchase-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></div>
-    <h3 id="purchaseTitle" data-i18n="purchaseTitle">购买壁纸版</h3>
+    <h3 id="purchaseTitle" data-i18n="purchaseTitle">原项目的壁纸版</h3>
     <p class="sub" id="purchaseTheme"></p>
-    <p class="sub" data-i18n="purchaseMessage">体验版可永久使用沙滩和草地。壁纸版可解锁更多主题，并在同一个 Deskland 中使用。</p>
+    <p class="sub" data-i18n="purchaseMessage">Sylvaframe 包含森林、沙滩和草地。更多主题可在原项目的 Deskland 壁纸版中查看。</p>
     <div class="actions">
       <button class="ghost-btn" id="purchaseLater" data-i18n="purchaseLater">继续体验</button>
-      <button class="ghost-btn primary" id="purchaseWebsite" data-i18n="purchaseWebsite">前往官网</button>
+      <button class="ghost-btn primary" id="purchaseWebsite" data-i18n="purchaseWebsite">访问原项目官网</button>
     </div>
   </div>
 </div>
@@ -347,7 +348,7 @@
     <div class="actions">
       <button class="ghost-btn" id="shareReveal" data-i18n="openFolder">打开所在文件夹</button>
       <button class="ghost-btn" id="shareOpen">打开图片</button>
-      <a class="ghost-btn" id="shareDownload" hidden download="Deskland.png">保存图片</a>
+      <a class="ghost-btn" id="shareDownload" hidden download="Sylvaframe.png">保存图片</a>
       <button class="ghost-btn primary" id="shareClose" data-i18n="ok">好的</button>
     </div>
   </div>
@@ -359,12 +360,12 @@
     <h3 id="helpTitle" data-i18n="helpTitle">使用帮助</h3>
     <p class="sub" data-i18n="helpSubtitle">常见使用问题和解决方法</p>
     <section class="help-article">
-      <h4 data-i18n="helpWallpaperQ">Deskland 频繁闪烁或重启，怎么办？</h4>
-      <p data-i18n="helpWallpaperA">如果系统壁纸会定时自动切换，切换时可能让 Deskland 闪烁或反复重启。请把常规壁纸改成不会自动切换的固定背景。</p>
+      <h4 data-i18n="helpWallpaperQ">Sylvaframe 频繁闪烁或重启，怎么办？</h4>
+      <p data-i18n="helpWallpaperA">如果系统壁纸会定时自动切换，切换时可能让 Sylvaframe 闪烁或反复重启。请把常规壁纸改成不会自动切换的固定背景。</p>
       <ol>
         <li data-i18n="helpWallpaperStep1">打开 Windows 设置 → 个性化 → 背景。</li>
         <li data-i18n="helpWallpaperStep2">将“个性化设置背景”设为“图片”或“纯色”，不要选择“幻灯片放映”或“Windows 聚焦”。</li>
-        <li data-i18n="helpWallpaperStep3">改完后重新打开 Deskland。</li>
+        <li data-i18n="helpWallpaperStep3">改完后重新打开 Sylvaframe。</li>
       </ol>
     </section>
     <div class="actions"><button class="ghost-btn primary" id="helpDone" data-i18n="gotIt">知道了</button></div>
@@ -728,7 +729,7 @@ function showShare(r) {
   if (!inHost) {
     $('shareDownload').href = r.full;
     $('shareDownload').textContent = t(video ? 'saveVideo' : 'saveImage');
-    $('shareDownload').download = 'Deskland.' + (video ? (r.ext || 'mp4') : 'png');
+    $('shareDownload').download = 'Sylvaframe.' + (video ? (r.ext || 'mp4') : 'png');
   }
   $('shareModal').hidden = false;
   $('shareClose').focus();

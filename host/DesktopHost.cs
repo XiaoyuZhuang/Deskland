@@ -1,4 +1,4 @@
-// Deskland · 桌面宿主（原型）
+// Sylvaframe · Windows 桌面宿主，基于 Deskland Preview
 //
 // 做四件事：
 //   1. 在每块显示器的桌面图标下面挂一个无边框窗口，用 WebView2 显示当前主题
@@ -25,11 +25,17 @@ using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
 using Microsoft.Win32;
 
+static class AppIdentity
+{
+    public const string Name = "Sylvaframe";
+    public const string IconFile = "Sylvaframe.ico";
+}
+
 static class Program
 {
-    public static readonly string ExitEventName = "DesklandHost_Exit" + InstallProfile.Suffix;
-    public static readonly string MenuEventName = "DesklandHost_Menu" + InstallProfile.Suffix;
-    public static readonly string SettingsEventName = "DesklandHost_Settings" + InstallProfile.Suffix;
+    public static readonly string ExitEventName = AppIdentity.Name + "_Exit" + InstallProfile.Suffix;
+    public static readonly string MenuEventName = AppIdentity.Name + "_Menu" + InstallProfile.Suffix;
+    public static readonly string SettingsEventName = AppIdentity.Name + "_Settings" + InstallProfile.Suffix;
 
     // 通知正在运行的实例（退出 / 弹出菜单）
     static void Signal(string name)
@@ -42,18 +48,15 @@ static class Program
     [STAThread]
     static void Main(string[] args)
     {
-        // Deskland.exe --exit ：通知正在运行的实例正常退出（恢复原壁纸）
-        // Deskland.exe --menu ：让正在运行的实例在鼠标位置弹出菜单
-        // Deskland.exe --settings ：让正在运行的实例打开设置窗口
+        // --exit 正常退出，--menu 弹出托盘菜单，--settings 打开设置窗口。
         if (args.Length > 0 && args[0] == "--exit") { Signal(ExitEventName); return; }
         if (args.Length > 0 && args[0] == "--menu") { Signal(MenuEventName); return; }
         if (args.Length > 0 && args[0] == "--settings") { Signal(SettingsEventName); return; }
         if (args.Length > 0 && args[0] == "--exit-installed") { Environment.ExitCode = InstallProfile.StopInstalled(); return; }
-        // Preview never migrates or shares the development edition's settings.                                 // 老名字（Habitat Wallpaper）下的数据目录、开机自启项搬过来
         bool fromAutostart = Array.IndexOf(args, "--autostart") >= 0;
         if (fromAutostart) AutoStartCheck.MarkLaunched();  // 开机自启跑起来了（不管后面是不是已经在运行）
         bool created;
-        var mutex = new Mutex(true, "DesklandHost_Singleton" + InstallProfile.Suffix, out created);
+        var mutex = new Mutex(true, AppIdentity.Name + "_Singleton" + InstallProfile.Suffix, out created);
         if (!created)
         {
             if (!fromAutostart) Signal(SettingsEventName); // 已经在运行：再次双击程序 = 打开设置（开机自启那次就悄悄退出）
@@ -99,47 +102,6 @@ static class Log
             File.AppendAllText(FilePath, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss ") + msg + "\r\n");
         }
         catch { }
-    }
-}
-
-// 2026-10-10 改名（Habitat Wallpaper → Deskland）：老用户的东西照旧能用
-//   - 数据目录 %LOCALAPPDATA%\HabitatWallpaper（设置、开机自启的记录、WebView2 缓存）整个搬到 %LOCALAPPDATA%\Deskland；
-//     旧程序还开着、WebView2 的文件被占着搬不动时，只把设置这些小文件拷过去
-//   - 用户开着开机自启：注册表 Run 项里的 HabitatWallpaper 换成指向 Deskland.exe 的 Deskland（用户原来的选择照旧，不会替没开的人打开）
-static class Rename
-{
-    const string OldName = "HabitatWallpaper";
-    public static void Migrate()
-    {
-        string oldDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), OldName);
-        try
-        {
-            if (Directory.Exists(oldDir) && !Directory.Exists(Log.DataDir))
-            {
-                try { Directory.Move(oldDir, Log.DataDir); }
-                catch
-                {
-                    Directory.CreateDirectory(Log.DataDir);
-                    foreach (string src in Directory.GetFiles(oldDir))
-                        if (!src.EndsWith(".log", StringComparison.OrdinalIgnoreCase)) File.Copy(src, Path.Combine(Log.DataDir, Path.GetFileName(src)), false);
-                }
-                Log.Write("改名：数据目录从 " + oldDir + " 搬到 " + Log.DataDir);
-            }
-        }
-        catch (Exception ex) { Log.Write("改名：搬数据目录失败：" + ex.Message); }
-        try
-        {
-            using (RegistryKey k = Registry.CurrentUser.OpenSubKey(HostContext.RunKey, true))
-            {
-                if (k != null && k.GetValue(OldName) != null)
-                {
-                    k.DeleteValue(OldName, false);
-                    k.SetValue(HostContext.RunName, "\"" + Application.ExecutablePath + "\" --autostart");
-                    Log.Write("改名：开机自启的启动项 " + OldName + " 换成 " + HostContext.RunName);
-                }
-            }
-        }
-        catch (Exception ex) { Log.Write("改名：换开机自启的启动项失败：" + ex.Message); }
     }
 }
 
@@ -210,11 +172,11 @@ static class Json
 }
 
 // 用户设置：当前主题 + 每个主题的参数（只存用户改过的，没改过的用主题默认值）
-// 保存在 %LOCALAPPDATA%\Deskland\settings.json
+// 保存到 Sylvaframe 的设置目录。
 static class Settings
 {
     static readonly string FilePath = Path.Combine(Log.DataDir, "settings.json");
-    public static string Theme = "beach";
+    public static string Theme = "forest";
     public static string Lang = "auto";                // 界面语言："auto"（跟随系统）或 I18n.Supported 里的一种
     public static Dictionary<string, Dictionary<string, object>> Params = new Dictionary<string, Dictionary<string, object>>();
 
@@ -222,8 +184,9 @@ static class Settings
     {
         try
         {
-            if (!File.Exists(FilePath)) return;
-            var root = Json.Parse(File.ReadAllText(FilePath, Encoding.UTF8)) as Dictionary<string, object>;
+            string source = File.Exists(FilePath) || InstallProfile.Isolated ? FilePath : InstallProfile.LegacySettingsPath;
+            if (!File.Exists(source)) return;
+            var root = Json.Parse(File.ReadAllText(source, Encoding.UTF8)) as Dictionary<string, object>;
             if (root == null) return;
             object v;
             if (root.TryGetValue("theme", out v) && v is string) Theme = (string)v;
@@ -235,6 +198,11 @@ static class Settings
                     if (d != null) Params[kv.Key] = d;
                 }
             Log.Write("已读取设置：主题 " + Theme);
+            if (source != FilePath)
+            {
+                Save();
+                Log.Write("从旧版森林便携程序导入设置");
+            }
         }
         catch (Exception ex) { Log.Write("读取设置失败（将使用默认值）：" + ex.Message); }
     }
@@ -312,7 +280,7 @@ static class I18n
 // 打开设置的方式：双击程序（没运行就先启动再打开）、双击托盘图标、菜单 → 设置…（或 --settings）
 class HostContext : ApplicationContext
 {
-    public const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run", RunName = "DesklandPreview";
+    public const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run", RunName = AppIdentity.Name;
     static readonly MethodInfo ShowTrayMenu =
         typeof(NotifyIcon).GetMethod("ShowContextMenu", BindingFlags.Instance | BindingFlags.NonPublic);
 
@@ -388,7 +356,7 @@ class HostContext : ApplicationContext
 
         tray = new NotifyIcon();
         tray.Icon = AppIcon.Create();
-        tray.Text = "Deskland Preview";
+        tray.Text = AppIdentity.Name;
         tray.ContextMenu = new ContextMenu(new[] {
             settingsItem,
             pauseItem,
@@ -590,7 +558,7 @@ class HostContext : ApplicationContext
         }
     }
 
-    // ---- 一键分享：壁纸页面画好的图 → 存到"图片\Deskland"，复制到剪贴板，缩略图发回设置页 ----
+    // 一键分享：保存到图片文件夹，复制到剪贴板，再向设置页发送缩略图。
     string lastShare;                                   // 最近一张分享图的路径（设置页只能让我们打开这一张）
     void OnShareImage(string thumb, string png, string err)
     {
@@ -599,9 +567,9 @@ class HostContext : ApplicationContext
         {
             int comma = png.IndexOf(',');
             byte[] bytes = Convert.FromBase64String(comma >= 0 ? png.Substring(comma + 1) : png);
-            string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "Deskland Preview");
+            string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), AppIdentity.Name);
             Directory.CreateDirectory(dir);
-            string path = Path.Combine(dir, "Deskland " + DateTime.Now.ToString("yyyy-MM-dd HHmmss") + ".png");
+            string path = Path.Combine(dir, AppIdentity.Name + " " + DateTime.Now.ToString("yyyy-MM-dd HHmmss") + ".png");
             File.WriteAllBytes(path, bytes);
             lastShare = path;
             try
@@ -639,9 +607,9 @@ class HostContext : ApplicationContext
         {
             int comma = video.IndexOf(',');
             byte[] bytes = Convert.FromBase64String(comma >= 0 ? video.Substring(comma + 1) : video);
-            string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "Deskland Preview");
+            string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), AppIdentity.Name);
             Directory.CreateDirectory(dir);
-            string name = "Deskland " + DateTime.Now.ToString("yyyy-MM-dd HHmmss") + (mime == "video/webm" ? ".webm" : ".mp4");
+            string name = AppIdentity.Name + " " + DateTime.Now.ToString("yyyy-MM-dd HHmmss") + (mime == "video/webm" ? ".webm" : ".mp4");
             string path = Path.Combine(dir, name);
             File.WriteAllBytes(path, bytes);
             lastShare = path;
@@ -694,7 +662,7 @@ class HostContext : ApplicationContext
     // 不使用需要额外权限的任务计划；快捷方式创建失败时仍保留 Run 项作为回退。
     static string AutoStartShortcutPath
     {
-        get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Startup), "Deskland.lnk"); }
+        get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Startup), AppIdentity.Name + ".lnk"); }
     }
 
     static object OpenAutoStartShortcut()
@@ -710,7 +678,7 @@ class HostContext : ApplicationContext
 
     static bool AutoStartShortcutEnabled()
     {
-        if (!File.Exists(AutoStartShortcutPath)) return false;
+        if (InstallProfile.Isolated || !File.Exists(AutoStartShortcutPath)) return false;
         object link = null;
         try
         {
@@ -741,7 +709,7 @@ class HostContext : ApplicationContext
             link.GetType().InvokeMember("IconLocation", BindingFlags.SetProperty,
                 null, link, new object[] { Application.ExecutablePath + ",0" });
             link.GetType().InvokeMember("Description", BindingFlags.SetProperty,
-                null, link, new object[] { "Deskland" });
+                null, link, new object[] { AppIdentity.Name });
             link.GetType().InvokeMember("Save", BindingFlags.InvokeMethod, null, link, null);
             return File.Exists(AutoStartShortcutPath);
         }
@@ -970,12 +938,12 @@ class HotkeyWindow : NativeWindow, IDisposable
     }
 }
 
-// 托盘和设置窗口共用 Deskland 图标；构建脚本会把图标复制到程序目录。
+// 托盘和设置窗口共用构建脚本复制到程序目录的原创图标。
 static class AppIcon
 {
     public static Icon Create()
     {
-        return new Icon(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "DesklandPreview.ico"));
+        return new Icon(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, AppIdentity.IconFile));
     }
 
     static GraphicsPath RoundRect(Rectangle r, int radius)
@@ -1002,8 +970,8 @@ class SettingsForm : Form
     {
         this.pageDir = pageDir;
         this.host = host;
-        Text = "Deskland Preview";
-        AccessibleName = "Deskland Preview";
+        Text = AppIdentity.Name;
+        AccessibleName = AppIdentity.Name;
         ShowIcon = true;
         Icon = AppIcon.Create();
         StartPosition = FormStartPosition.CenterScreen;
@@ -1067,7 +1035,7 @@ class SettingsForm : Form
         catch (Exception ex)
         {
             Log.Write("设置窗口启动失败：" + ex);
-            MessageBox.Show(I18n.T("errSettings", "msg", ex.Message), "Deskland Preview");
+            MessageBox.Show(I18n.T("errSettings", "msg", ex.Message), AppIdentity.Name);
             Close();
         }
     }
@@ -1125,7 +1093,7 @@ class WallpaperForm : Form
         AutoScaleMode = AutoScaleMode.None;
         Bounds = screen;
         BackColor = Color.FromArgb(26, 163, 196);
-        Text = "DesklandWindow";
+        Text = AppIdentity.Name + "Wallpaper";
 
         web = new WebView2();
         web.Dock = DockStyle.Fill;
@@ -1295,7 +1263,7 @@ class WallpaperForm : Form
     {
         Log.Write(MonitorName + " " + msg);
         if (primaryAtStart)
-            MessageBox.Show(msg + "\n\n" + I18n.T("errSeeLog", "path", Log.FilePath), "Deskland Preview");
+            MessageBox.Show(msg + "\n\n" + I18n.T("errSeeLog", "path", Log.FilePath), AppIdentity.Name);
         Fatal = true;
         Shutdown();
     }
@@ -1656,25 +1624,27 @@ static class Native
     [DllImport("kernel32.dll")] public static extern bool ReadProcessMemory(IntPtr proc, IntPtr addr, out RECT buf, int size, out IntPtr read);
 }
 
-// Deskland Preview has its own data and instance identity; isolated profiles support installation QA.
+// 工作区测试可以覆盖数据目录，避免与正常运行的实例共享设置。
 static class InstallProfile
 {
-    public static readonly string Override = Environment.GetEnvironmentVariable("DESKLAND_PROFILE_DIR");
+    public static readonly string Override = Environment.GetEnvironmentVariable("SYLVAFRAME_PROFILE_DIR");
     public static readonly bool Isolated = !string.IsNullOrEmpty(Override);
-    public static readonly string DataDir = Isolated ? Path.GetFullPath(Override) : Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DesklandPreview");
+    static readonly string LocalData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+    public static readonly string DataDir = Isolated ? Path.GetFullPath(Override) : Path.Combine(LocalData, AppIdentity.Name);
+    public static readonly string LegacySettingsPath = Path.Combine(LocalData, "DesklandForestLocal", "settings.json");
     public static readonly string Suffix = MakeSuffix();
     static string MakeSuffix()
     {
-        if (!Isolated) return "_Preview";
+        if (!Isolated) return "";
         using (var hash = System.Security.Cryptography.SHA256.Create())
-            return "_Preview_" + BitConverter.ToString(hash.ComputeHash(Encoding.UTF8.GetBytes(DataDir.ToUpperInvariant()))).Replace("-", "").Substring(0, 24);
+            return "_" + BitConverter.ToString(hash.ComputeHash(Encoding.UTF8.GetBytes(DataDir.ToUpperInvariant()))).Replace("-", "").Substring(0, 24);
     }
 
     // An installer may only close the instance using this exact executable path.
     public static int StopInstalled()
     {
-        foreach (Process process in Process.GetProcessesByName("Deskland"))
+        string executableName = Path.GetFileNameWithoutExtension(Application.ExecutablePath);
+        foreach (Process process in Process.GetProcessesByName(executableName))
         {
             using (process)
             {
