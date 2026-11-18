@@ -5,12 +5,14 @@ $lib = Join-Path $root 'lib'
 $bin = Join-Path $root 'bin'
 New-Item -ItemType Directory -Force $lib, $bin | Out-Null
 $version = '1.0.4191.47'
-$assemblies = @(
+$webviewFiles = @(
     @{ Entry = 'lib/net462/Microsoft.Web.WebView2.Core.dll'; Name = 'Microsoft.Web.WebView2.Core.dll' },
     @{ Entry = 'lib/net462/Microsoft.Web.WebView2.WinForms.dll'; Name = 'Microsoft.Web.WebView2.WinForms.dll' },
-    @{ Entry = 'runtimes/win-x64/native/WebView2Loader.dll'; Name = 'WebView2Loader.dll' }
+    @{ Entry = 'runtimes/win-x64/native/WebView2Loader.dll'; Name = 'WebView2Loader.dll' },
+    @{ Entry = 'LICENSE.txt'; Name = 'WebView2-SDK-LICENSE.txt' },
+    @{ Entry = 'NOTICE.txt'; Name = 'WebView2-SDK-NOTICE.txt' }
 )
-$missing = @($assemblies | Where-Object { -not (Test-Path -LiteralPath (Join-Path $lib $_.Name)) })
+$missing = @($webviewFiles | Where-Object { -not (Test-Path -LiteralPath (Join-Path $lib $_.Name)) })
 if ($missing.Count -gt 0) {
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -20,13 +22,13 @@ if ($missing.Count -gt 0) {
         Write-Host "下载 WebView2 SDK $version..."
         Invoke-WebRequest "https://api.nuget.org/v3-flatcontainer/microsoft.web.webview2/$version/microsoft.web.webview2.$version.nupkg" -OutFile $archive -UseBasicParsing
         $package = [IO.Compression.ZipFile]::OpenRead($archive)
-        foreach ($assembly in $assemblies) {
-            $entry = $package.GetEntry($assembly.Entry)
-            if ($null -eq $entry) { throw "依赖包缺少 $($assembly.Entry)" }
+        foreach ($file in $webviewFiles) {
+            $entry = $package.GetEntry($file.Entry)
+            if ($null -eq $entry) { throw "依赖包缺少 $($file.Entry)" }
             $sourceStream = $entry.Open()
             $targetStream = $null
             try {
-                $targetStream = [IO.File]::Create((Join-Path $lib $assembly.Name))
+                $targetStream = [IO.File]::Create((Join-Path $lib $file.Name))
                 $sourceStream.CopyTo($targetStream)
             } finally {
                 if ($null -ne $targetStream) { $targetStream.Dispose() }
@@ -59,6 +61,6 @@ using System.Reflection;
     /r:"$lib\Microsoft.Web.WebView2.Core.dll" /r:"$lib\Microsoft.Web.WebView2.WinForms.dll" `
     "$root\DesktopHost.cs" "$root\Themes.cs" "$versionSource"
 if ($LASTEXITCODE -ne 0) { throw '编译失败' }
-foreach ($assembly in $assemblies) { Copy-Item -LiteralPath (Join-Path $lib $assembly.Name) -Destination $bin -Force }
+foreach ($file in $webviewFiles) { Copy-Item -LiteralPath (Join-Path $lib $file.Name) -Destination $bin -Force }
 Copy-Item -LiteralPath (Join-Path $root 'Sylvaframe.ico') -Destination (Join-Path $bin 'Sylvaframe.ico') -Force
 Write-Host "编译完成：$bin\Sylvaframe.exe"

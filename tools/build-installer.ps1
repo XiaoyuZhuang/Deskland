@@ -70,7 +70,9 @@ foreach ($file in $sources) {
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 [IO.Compression.ZipFile]::CreateFromDirectory($sourceStage, (Join-Path $payload 'Sylvaframe-source.zip'))
 # Only program data is installed. The accompanying ZIP contains the exact corresponding source.
-$runtimeFiles = @('host\bin\Sylvaframe.exe', 'host\bin\Sylvaframe.ico', 'host\bin\Microsoft.Web.WebView2.Core.dll', 'host\bin\Microsoft.Web.WebView2.WinForms.dll', 'host\bin\WebView2Loader.dll')
+$runtimeFiles = @('host\bin\Sylvaframe.exe', 'host\bin\Sylvaframe.ico', 'host\bin\Microsoft.Web.WebView2.Core.dll',
+    'host\bin\Microsoft.Web.WebView2.WinForms.dll', 'host\bin\WebView2Loader.dll',
+    'host\bin\WebView2-SDK-LICENSE.txt', 'host\bin\WebView2-SDK-NOTICE.txt')
 $installFiles = @('LICENSE', 'NOTICE', 'README.md', 'FOREST.md', 'THIRD_PARTY_NOTICES.md', 'TRADEMARKS.md') + @($themeFiles | Where-Object { $_ -ne 'serve.mjs' } | ForEach-Object { 'prototype\' + $_ }) + $runtimeFiles
 foreach ($file in $installFiles) {
     $target = Join-Path $payload $file

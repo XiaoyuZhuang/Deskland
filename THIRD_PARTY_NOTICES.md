@@ -12,6 +12,10 @@ WebView2 及 Windows / .NET Framework 组件适用各自的许可条款，不因
 
 The host uses the Microsoft Edge WebView2 SDK and Runtime. SDK binaries are downloaded by the build script and are not checked into this repository. Microsoft components retain their respective licenses.
 
+便携版和安装包在 `host/bin/` 中随 WebView2 SDK DLL 附带原始 `WebView2-SDK-LICENSE.txt` 和 `WebView2-SDK-NOTICE.txt`。
+
+The portable ZIP and installer include the SDK's original license and notice in `host/bin/` alongside the WebView2 SDK DLLs.
+
 ## NSIS
 
 Windows 安装包使用 NSIS 3.13 制作。便携编译器仅在构建时下载，不作为项目源码提交。NSIS 及其压缩模块适用各自许可，详见 https://nsis.sourceforge.io/License 。安装包附带项目对应源码 ZIP。
