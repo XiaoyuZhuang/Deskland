@@ -488,7 +488,8 @@ function fmt(p, v) {
   return p.unit ? s + ' ' + p.unit : s;
 }
 
-const thumbUrl = (value, id) => window.DESKLAND_THUMBS?.[id] || String(value || '').match(/^url\(([^)]+)\)/)?.[1] || '';
+const thumbUrl = th => (th.thumbSource === 'rendered' ? '' : window.DESKLAND_THUMBS?.[th.id]) ||
+  String(th.thumb || '').match(/^url\(([^)]+)\)/)?.[1] || '';
 function renderThemes() {
   $('themes').innerHTML = state.registry.themes.map(th => {
     const locked = th.locked === true, ready = th.status === 'ready', on = th.id === state.theme;
@@ -497,7 +498,7 @@ function renderThemes() {
       <div class="theme-copy"><div class="theme-meta"><span class="badge">${t(on ? 'badgeOn' : locked ? 'badgeLocked' : ready ? 'badgeReady' : 'badgeSoon')}</span>
         <svg class="theme-arrow" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 15 15 5M5 5h10v10"/></svg></div>
         <div class="name">${th.name}</div></div>
-      <div class="thumb" style="background:${th.thumb || '#ccc'}">${thumbUrl(th.thumb, th.id) ? `<img src="${thumbUrl(th.thumb, th.id)}" alt="" decoding="async">` : ''}${locked ? `<span class="lock-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>` : ''}</div></button>`;
+      <div class="thumb" style="background:${th.thumb || '#ccc'}">${thumbUrl(th) ? `<img src="${thumbUrl(th)}" alt="" decoding="async">` : ''}${locked ? `<span class="lock-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>` : ''}</div></button>`;
   }).join('');
 }
 let purchaseThemeId = null, purchaseReturnFocus = null;
@@ -798,6 +799,9 @@ function onHost(m) {
       showTheme();
       document.documentElement.classList.add('ready');
     });
+  } else if (m.t === 'screen') {
+    state.screen = { w: m.w, h: m.h };
+    layoutPreview();
   } else if (m.t === 'themeChanged') {
     if (!themeById(m.id) || themeById(m.id).status !== 'ready') return;
     state.theme = m.id;
@@ -834,7 +838,8 @@ function mockHost() {
   for (let c = 0; c < 4; c++) for (let row = 0; row < 9; row++) cell(c, row);
   for (const [c, row] of [[6, 0], [6, 1], [7, 3], [8, 3], [8, 4], [12, 1], [13, 1], [14, 1], [13, 2], [14, 2], [20, 0], [21, 0], [19, 5], [20, 5]]) cell(c, row);
   const bl = browserLang();
-  onHost({ t: 'init', theme: 'beach', params: {}, screen: { w: W * k, h: H * k }, autostart: false, lang: 'auto', langEff: bl, langSys: bl });
+  const requestedTheme = new URLSearchParams(location.search).get('theme') || 'beach';
+  onHost({ t: 'init', theme: requestedTheme, params: {}, screen: { w: W * k, h: H * k }, autostart: false, lang: 'auto', langEff: bl, langSys: bl });
   onHost({ t: 'icons', vis: true, r });
   if (new URLSearchParams(location.search).has('updateDemo')) onHost({ t: 'updateState', version: '0.2.0', status: 'available', progress: -1 });
 }

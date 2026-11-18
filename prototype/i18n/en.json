@@ -427,25 +427,26 @@
     },
     "forest": {
       "name": "Forest",
-      "desc": "Your icons sit in a clearing ringed by gouache cartoon trees swaying in the breeze",
+      "desc": "A green creek winds through an illustrated forest. Treetops sway and clearings follow your icons.",
       "groups": [
         "Around icons",
-        "Trees",
-        "Details"
+        "Woodland and creek"
       ],
       "params": {
         "sigma": {
-          "label": "Clearing size",
-          "hint": "How big the clearing around your icons is, and how far away the trees stand"
+          "label": "Clearing margin",
+          "hint": "Extra space around icons and their labels"
+        },
+        "density": {
+          "label": "Tree density",
+          "hint": "How densely trees grow outside the clearings"
         },
         "wind": {
-          "label": "Wind",
-          "hint": "How much the treetops sway; 0 means no wind"
+          "label": "Animation speed",
+          "hint": "Adjust the speed of the treetops, creek ripples and drifting pollen. Set to 0 for a still scene."
         },
-        "birds": {
-          "label": "Birds",
-          "hint": "Mostly perched on treetops, now and then flying to a nearby tree — they stay in the woods",
-          "unit": ""
+        "stream": {
+          "label": "Creek width"
         }
       }
     },

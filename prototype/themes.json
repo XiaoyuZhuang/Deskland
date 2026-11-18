@@ -175,6 +175,68 @@
       ]
     },
     {
+      "id": "forest",
+      "name": "森林",
+      "desc": "一条青绿小溪穿过手绘树林。树梢随风摆动，林间空地跟随图标变化。",
+      "page": "forest.html",
+      "status": "ready",
+      "product": "free",
+      "adaptive": true,
+      "thumb": "url(thumbs/forest-creek.webp) center / cover no-repeat, #486a55",
+      "thumbSource": "rendered",
+      "groups": [
+        {
+          "name": "图标周围",
+          "params": [
+            {
+              "key": "sigma",
+              "label": "空地留白",
+              "hint": "在图标和文件名周围额外留出的距离",
+              "min": 0,
+              "max": 150,
+              "step": 1,
+              "default": 45,
+              "unit": "px"
+            }
+          ]
+        },
+        {
+          "name": "树林与溪流",
+          "params": [
+            {
+              "key": "density",
+              "label": "树木密度",
+              "hint": "调整空地之外的树木疏密",
+              "min": 0.3,
+              "max": 1,
+              "step": 0.01,
+              "default": 0.8,
+              "format": "percent"
+            },
+            {
+              "key": "wind",
+              "label": "动画速度",
+              "hint": "调整树梢、溪流水纹和飘浮花粉的速度，设为 0 可停止动画",
+              "min": 0,
+              "max": 2,
+              "step": 0.05,
+              "default": 1,
+              "format": "times"
+            },
+            {
+              "key": "stream",
+              "label": "溪流宽度",
+              "min": 0.6,
+              "max": 1.6,
+              "step": 0.05,
+              "default": 1,
+              "format": "times"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "id": "beach-turquoise",
       "name": "马尔代夫",
       "desc": "青绿色海水与浅米黄沙滩，暗色珊瑚礁间的小鱼成群游动",
@@ -208,15 +270,6 @@
       "status": "locked",
       "locked": true,
       "thumb": "url(thumbs/ocean.webp?v=a503d4f275) center / cover no-repeat, radial-gradient(ellipse 22% 16% at 36% 38%, #fbfdff 60%, #d5e4f5 75%, transparent 78%), radial-gradient(ellipse 22% 16% at 46% 58%, #1c58b4 70%, transparent 74%), radial-gradient(ellipse 18% 13% at 72% 70%, #fbfdff 60%, #d5e4f5 75%, transparent 78%), radial-gradient(ellipse 18% 13% at 80% 86%, #1c58b4 70%, transparent 74%), linear-gradient(160deg, #2a72d4 0%, #3a86e0 100%)",
-      "thumbSource": "custom"
-    },
-    {
-      "id": "forest",
-      "name": "森林",
-      "desc": "图标在林间的空地上，四周长满水粉风的卡通树，风吹得树梢轻轻摇",
-      "status": "locked",
-      "locked": true,
-      "thumb": "url(thumbs/forest.webp?v=d70cf321e5) center / cover no-repeat, radial-gradient(ellipse 30% 26% at 48% 52%, #c3d684 92%, transparent 96%), radial-gradient(circle at 14% 22%, #1f5a3a 9%, transparent 10%), radial-gradient(circle at 30% 14%, #4f8f5a 8%, transparent 9%), radial-gradient(circle at 82% 30%, #2f6e6a 10%, transparent 11%), radial-gradient(circle at 70% 86%, #8a9a3a 9%, transparent 10%), radial-gradient(circle at 22% 84%, #3c6f7c 10%, transparent 11%), linear-gradient(160deg, #2d6a45 0%, #3f7f50 50%, #2a5a48 100%)",
       "thumbSource": "custom"
     },
     {

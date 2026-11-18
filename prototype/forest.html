@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>森林 · Forest</title>
+  <style>
+    html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #486a55; }
+    #forest, #icons { position: fixed; inset: 0; width: 100%; height: 100%; }
+    #icons { pointer-events: none; font: 12px "Segoe UI", "Microsoft YaHei", sans-serif; }
+    .icon { position: absolute; display: grid; align-content: start; justify-items: center;
+      gap: 6px; padding: 4px 0; border: 1px solid transparent; border-radius: 6px;
+      background: transparent; color: white; text-shadow: 0 1px 4px #192d23; font: inherit; }
+    button.icon { pointer-events: auto; cursor: grab; touch-action: none; user-select: none; }
+    button.icon:active { cursor: grabbing; }
+    button.icon:focus-visible, button.icon:hover { border-color: #f2efd2a0; background: #f2efd227; }
+    .glyph { width: 32px; height: 25px; display: block; position: relative; box-sizing: border-box;
+      border-radius: 4px; margin: 5px 0 0; background: linear-gradient(#ffe3a3, #edbc69);
+      box-shadow: 0 3px 9px #24392466, inset 0 1px #fff8; }
+    .glyph::before { position: absolute; left: 1px; top: -4px; width: 13px; height: 7px;
+      background: #db9c53; border-radius: 4px 4px 0 0; content: ""; z-index: -1; }
+    .glyph.page { width: 23px; height: 29px; margin-top: 1px; border-radius: 3px;
+      background: repeating-linear-gradient(#c4d2c1 0 1px, transparent 1px 4px) 5px 9px / 13px 12px no-repeat,
+        linear-gradient(#f5f4dc, #dce6cf); }
+    .glyph.page::before { display: none; }
+    .ghost .glyph { width: min(45%, 32px); opacity: .86; }
+    .ghost .line { width: 61%; height: 6px; border-radius: 4px; background: #fff9; }
+    #demo { position: fixed; right: 22px; bottom: 20px; display: flex; gap: 12px; align-items: center;
+      padding: 7px 8px 7px 13px; border-radius: 12px; color: #f4f0dc; background: #1c322ae6;
+      box-shadow: 0 5px 18px #182c2566; font: 12px "Segoe UI", "Microsoft YaHei", sans-serif; }
+    #demo[hidden] { display: none; }
+    #toggle-motion { padding: 6px 10px; border: 1px solid #a8b79c70; border-radius: 7px;
+      background: #ffffff10; color: inherit; font: inherit; cursor: pointer; }
+    @media (max-width: 500px) { #demo { right: 12px; bottom: 12px; gap: 8px; } }
+  </style>
+</head>
+<body>
+  <canvas id="forest" aria-hidden="true"></canvas>
+  <div id="icons"></div>
+  <div id="demo" hidden>
+    <span id="demo-hint">拖动示例图标，改变林间空地</span>
+    <button type="button" id="toggle-motion">暂停动画</button>
+  </div>
+  <script src="forest-scene.js"></script>
+  <script src="forest.js"></script>
+  <script src="share.js"></script>
+</body>
+</html>

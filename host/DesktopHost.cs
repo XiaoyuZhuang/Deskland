@@ -1,7 +1,7 @@
 // Deskland · 桌面宿主（原型）
 //
 // 做四件事：
-//   1. 把一个无边框窗口挂到桌面图标下面（壁纸层），里面用 WebView2 显示当前主题的页面（如 prototype/flat.html?wallpaper=1）
+//   1. 在每块显示器的桌面图标下面挂一个无边框窗口，用 WebView2 显示当前主题
 //   0. 设置窗口（prototype/settings.html）：选主题、调参数，实时同步到壁纸并保存到 settings.json；一键分享（壁纸页面画一张打好马赛克的桌面图）
 //   2. 每 400ms 读取桌面图标的真实位置（桌面 ListView 的跨进程消息），有变化才发给页面
 //   3. 前台窗口最大化 / 全屏时暂停动画；托盘图标可以暂停、重新载入、退出（退出后恢复原壁纸）
@@ -72,16 +72,16 @@ static class Program
         // 24H2+ 的挂法：默认做 Progman 的分层子窗口（换系统壁纸时会闪一下）；
         //   --defview：挂进图标层里、图标列表之下（实验：实测画不出来）；--legacy：挂进 WorkerW（换壁纸时会被连带销毁）
         string attach = "progman";
-        bool autostart = false;                           // --autostart：开机自动启动，不弹设置窗口
+        bool background = false;
         foreach (string a in args)
         {
             if (a == "--legacy") attach = "legacy";
             else if (a == "--defview") attach = "defview";
-            else if (a == "--autostart") autostart = true;
+            else if (a == "--autostart" || a == "--background") background = true;
             else if (!a.StartsWith("--")) pageDir = a;
         }
         WallpaperForm.AttachMode = attach;
-        Application.Run(new HostContext(pageDir, !autostart));
+        Application.Run(new HostContext(pageDir, !background));
         GC.KeepAlive(mutex);
     }
 }
@@ -319,22 +319,34 @@ class HostContext : ApplicationContext
     readonly string pageDir;
     readonly NotifyIcon tray;
     readonly MenuItem pauseItem, autoStartItem, settingsItem, reloadItem, exitItem;
-    readonly System.Windows.Forms.Timer watch;
+    readonly System.Windows.Forms.Timer watch, iconWatch;
     readonly EventWaitHandle exitEvent, menuEvent, settingsEvent;
     readonly HotkeyWindow hotkey = new HotkeyWindow();
-    readonly Queue<DateTime> restarts = new Queue<DateTime>();
-    WallpaperForm form, dead;
+    readonly IconReader iconReader = new IconReader();
+    readonly Dictionary<string, WallpaperDisplay> displays = new Dictionary<string, WallpaperDisplay>(StringComparer.OrdinalIgnoreCase);
+    readonly List<WallpaperForm> dead = new List<WallpaperForm>();
+    WallpaperDisplay primaryDisplay;
     SettingsForm settingsWin;
-    DateTime nextStart = DateTime.MaxValue, saveDue = DateTime.MaxValue;
+    DateTime saveDue = DateTime.MaxValue;
     bool manualPause, exiting;
     string autoStartSw;                                 // 开机自启没跑起来（只在手动打开时检查）：正在运行的安全软件名（没认出来是 ""）；没问题是 null
     string updateVersion, updateUrl, updateStatus = "", updateError = "";
     double updateProgress = -1;                         // -1 = 当前阶段没有可显示的百分比
 
+    sealed class WallpaperDisplay
+    {
+        public Screen Monitor;
+        public WallpaperForm Form;
+        public DateTime RetryAt;
+        public readonly Queue<DateTime> Restarts = new Queue<DateTime>();
+    }
+
+    WallpaperForm PrimaryForm { get { return primaryDisplay == null ? null : primaryDisplay.Form; } }
+
     public HostContext(string pageDir, bool showSettings)
     {
         this.pageDir = pageDir;
-        Log.Write("启动，页面目录：" + pageDir + (showSettings ? "" : "（开机自动启动）"));
+        Log.Write("启动，页面目录：" + pageDir + (showSettings ? "" : "（后台启动）"));
         if (showSettings) autoStartSw = AutoStartCheck.Detect(IsAutoStart());
         Settings.Load();
         I18n.Load(pageDir, Settings.Lang);
@@ -351,7 +363,8 @@ class HostContext : ApplicationContext
         {
             manualPause = !manualPause;
             pauseItem.Checked = manualPause;
-            if (form != null) form.SetManualPause(manualPause);
+            foreach (var display in displays.Values)
+                if (display.Form != null) display.Form.SetManualPause(manualPause);
         });
         autoStartItem = new MenuItem(I18n.T("trayAutostart"), delegate { SetAutoStart(!autoStartItem.Checked); });
         autoStartItem.Checked = IsAutoStart();
@@ -379,7 +392,14 @@ class HostContext : ApplicationContext
         tray.ContextMenu = new ContextMenu(new[] {
             settingsItem,
             pauseItem,
-            reloadItem = new MenuItem(I18n.T("trayReload"), delegate { if (form != null) form.Reload(); }),
+            reloadItem = new MenuItem(I18n.T("trayReload"), delegate
+            {
+                foreach (var display in displays.Values)
+                {
+                    if (display.Form != null) display.Form.Reload();
+                    else { display.RetryAt = DateTime.MinValue; display.Restarts.Clear(); }
+                }
+            }),
             autoStartItem,
             new MenuItem("-"),
             exitItem = new MenuItem(I18n.T("trayExit"), delegate { Exit(); }),
@@ -392,8 +412,12 @@ class HostContext : ApplicationContext
         watch = new System.Windows.Forms.Timer();
         watch.Interval = 500;
         watch.Tick += delegate { Watch(); };
+        iconWatch = new System.Windows.Forms.Timer();
+        iconWatch.Interval = 400;
+        iconWatch.Tick += delegate { PollDesktopIcons(); };
         watch.Start();
-        StartForm();
+        iconWatch.Start();
+        SyncDisplays();
         if (showSettings) OpenSettings();                // 用户双击程序启动：直接打开设置
     }
 
@@ -429,6 +453,12 @@ class HostContext : ApplicationContext
     string SettingsMessage()
     {
         return Json.Stringify(Json.Obj("t", "settings", "v", Settings.For(Settings.Theme)));
+    }
+
+    void Broadcast(string json)
+    {
+        foreach (var display in displays.Values)
+            if (display.Form != null) display.Form.Post(json);
     }
 
     string UpdateStateMessage()
@@ -479,15 +509,15 @@ class HostContext : ApplicationContext
                     "autostartWarn", autoStartSw != null, "autostartSw", autoStartSw ?? "",
                     "lang", Settings.Lang, "langEff", I18n.Code, "langSys", I18n.Sys)));
                 if (updateVersion != null) PostUpdateState();
-                if (form != null && form.LastIcons != "") settingsWin.Post(form.LastIcons);
+                settingsWin.Post(PrimaryForm == null ? WallpaperForm.EmptyIcons : PrimaryForm.LastIcons);
                 break;
             case "set":
             {
                 string theme = m["theme"] as string, key = m["key"] as string;
                 if (theme == null || key == null) return;
                 Settings.For(theme)[key] = m["value"];
-                if (theme == Settings.Theme && form != null)
-                    form.Post(Json.Stringify(Json.Obj("t", "settings", "v", Json.Obj(key, m["value"]))));
+                if (theme == Settings.Theme)
+                    Broadcast(Json.Stringify(Json.Obj("t", "settings", "v", Json.Obj(key, m["value"]))));
                 SaveSoon();
                 break;
             }
@@ -496,7 +526,7 @@ class HostContext : ApplicationContext
                 string theme = m["theme"] as string;
                 if (theme == null) return;
                 Settings.Params.Remove(theme);
-                if (theme == Settings.Theme && form != null) form.Post("{\"t\":\"reset\"}");
+                if (theme == Settings.Theme) Broadcast("{\"t\":\"reset\"}");
                 SaveSoon();
                 Log.Write("恢复默认设置：" + theme);
                 break;
@@ -514,7 +544,8 @@ class HostContext : ApplicationContext
                 if (page == null || id == Settings.Theme) return;
                 Settings.Theme = id;
                 SaveSoon();
-                if (form != null) form.LoadPage(page);
+                foreach (var display in displays.Values)
+                    if (display.Form != null) display.Form.LoadPage(page);
                 Log.Write("切换主题：" + id);
                 break;
             }
@@ -533,12 +564,12 @@ class HostContext : ApplicationContext
                 break;
             }
             case "share":
-                if (form == null) { PostShareResult(false, null, I18n.T("errNotReady")); break; }
-                form.RequestSnapshot(OnShareImage);
+                if (PrimaryForm == null) { PostShareResult(false, null, I18n.T("errNotReady")); break; }
+                PrimaryForm.RequestSnapshot(OnShareImage);
                 break;
             case "shareVideo":
-                if (form == null) { PostShareResult(false, null, I18n.T("errNotReady")); break; }
-                form.RequestRecording(OnShareVideo);
+                if (PrimaryForm == null) { PostShareResult(false, null, I18n.T("errNotReady")); break; }
+                PrimaryForm.RequestRecording(OnShareVideo);
                 break;
             case "openShare":
                 if (lastShare != null && File.Exists(lastShare)) Process.Start(lastShare);
@@ -766,56 +797,126 @@ class HostContext : ApplicationContext
         autoStartItem.Checked = IsAutoStart();
     }
 
-    void StartForm()
+    void SyncDisplays()
     {
-        nextStart = DateTime.MaxValue;
+        var screens = Screen.AllScreens;
+        var connected = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var screen in screens) connected.Add(screen.DeviceName);
+        foreach (var name in new List<string>(displays.Keys))
+        {
+            if (connected.Contains(name)) continue;
+            var removed = displays[name];
+            displays.Remove(name);
+            if (removed.Form != null) removed.Form.Shutdown();
+        }
+
+        var oldPrimary = primaryDisplay;
+        var oldBounds = oldPrimary == null ? Rectangle.Empty : oldPrimary.Monitor.Bounds;
+        primaryDisplay = null;
+        foreach (var screen in screens)
+        {
+            WallpaperDisplay display;
+            if (!displays.TryGetValue(screen.DeviceName, out display))
+            {
+                display = new WallpaperDisplay();
+                displays.Add(screen.DeviceName, display);
+            }
+            if (display.Monitor != null && display.Monitor.Bounds != screen.Bounds)
+            {
+                var previous = display.Form;
+                display.Form = null;
+                if (previous != null) previous.Shutdown();
+                display.RetryAt = DateTime.MinValue;
+                display.Restarts.Clear();
+            }
+            display.Monitor = screen;
+            if (screen.Primary) primaryDisplay = display;
+        }
+        if (primaryDisplay != null) StartIfDue(primaryDisplay);
+        foreach (var display in displays.Values)
+            if (display != primaryDisplay && !exiting) StartIfDue(display);
+        if (settingsWin != null && primaryDisplay != null &&
+            (oldPrimary != primaryDisplay || oldBounds != primaryDisplay.Monitor.Bounds))
+        {
+            var bounds = primaryDisplay.Monitor.Bounds;
+            settingsWin.Post(Json.Stringify(Json.Obj("t", "screen", "w", bounds.Width, "h", bounds.Height)));
+            settingsWin.Post(PrimaryForm == null ? WallpaperForm.EmptyIcons : PrimaryForm.LastIcons);
+        }
+    }
+
+    void StartIfDue(WallpaperDisplay display)
+    {
+        if (exiting || display.Form != null || DateTime.Now < display.RetryAt) return;
         if (!ThemeAllowed(Settings.Theme)) Settings.Theme = ThemeAllowed("beach") ? "beach" : "meadow";
         string page = ThemeAllowed(Settings.Theme) ? Themes.PageFor(pageDir, Settings.Theme) : null;
         if (page == null)
         {
             Log.Write("没有可加载的已授权主题，5 秒后重试");
-            nextStart = DateTime.Now.AddSeconds(5);
+            display.RetryAt = DateTime.Now.AddSeconds(5);
             return;
         }
-        form = new WallpaperForm(pageDir, page, manualPause);
+        var form = new WallpaperForm(pageDir, page, display.Monitor, manualPause);
+        display.Form = form;
         form.SettingsJson = SettingsMessage;
-        form.IconsChanged += delegate(string json) { if (settingsWin != null) settingsWin.Post(json); };
+        form.IconsChanged += delegate(string json)
+        {
+            if (settingsWin != null && form == PrimaryForm) settingsWin.Post(json);
+        };
         form.RecordProgress += delegate(string p) { if (settingsWin != null) settingsWin.Post("{\"t\":\"recProgress\",\"p\":" + p + "}"); };
         form.HandleDestroyed += OnFormGone;
         form.Show();
     }
 
+    void PollDesktopIcons()
+    {
+        bool visible;
+        var rects = iconReader.Read(out visible);
+        foreach (var display in displays.Values)
+        {
+            if (display.Form == null) continue;
+            display.Form.EnsureZOrder();
+            if (rects != null) display.Form.UpdateIcons(rects, visible);
+        }
+    }
+
     void OnFormGone(object sender, EventArgs e)
     {
         var f = (WallpaperForm)sender;
-        if (f != form) return;
-        form = null;
-        dead = f;                                        // 稍后在计时器里释放，避免在销毁回调里重入
+        WallpaperDisplay display;
+        if (!displays.TryGetValue(f.MonitorName, out display) || f != display.Form) return;
+        display.Form = null;
+        dead.Add(f);                                     // 稍后释放，避免在销毁回调里重入
         if (exiting) return;
-        if (f.Fatal) { Exit(); return; }
-
-        // 1 分钟内反复被销毁：不再重试，避免和资源管理器打架
-        restarts.Enqueue(DateTime.Now);
-        while (restarts.Count > 0 && (DateTime.Now - restarts.Peek()).TotalSeconds > 60) restarts.Dequeue();
-        if (restarts.Count > 5)
+        if (f.Fatal)
         {
-            Log.Write("壁纸窗口 1 分钟内被销毁超过 5 次，停止重试");
-            MessageBox.Show(I18n.T("errRebuilt") + "\n\n" + I18n.T("errSeeLog", "path", Log.FilePath), "Deskland Preview");
-            Exit();
+            if (displays.Count == 1) Exit();
+            else display.RetryAt = DateTime.MaxValue;
             return;
         }
-        Log.Write("壁纸窗口被销毁（资源管理器重建了壁纸层），1 秒后重新挂载");
-        nextStart = DateTime.Now.AddSeconds(1);
+
+        var now = DateTime.Now;
+        display.Restarts.Enqueue(now);
+        while (display.Restarts.Count > 0 && (now - display.Restarts.Peek()).TotalSeconds > 60)
+            display.Restarts.Dequeue();
+        if (display.Restarts.Count > 5)
+        {
+            Log.Write(f.MonitorName + " 壁纸窗口 1 分钟内被销毁超过 5 次，60 秒后重试");
+            display.RetryAt = now.AddSeconds(60);
+            return;
+        }
+        Log.Write(f.MonitorName + " 壁纸窗口被销毁，1 秒后重新挂载");
+        display.RetryAt = now.AddSeconds(1);
     }
 
     void Watch()
     {
-        if (dead != null) { try { dead.Dispose(); } catch { } dead = null; }
+        foreach (var form in dead) { try { form.Dispose(); } catch { } }
+        dead.Clear();
         if (exitEvent.WaitOne(0)) { Exit(); return; }
         if (menuEvent.WaitOne(0)) ShowMenu();
         if (settingsEvent.WaitOne(0)) OpenSettings();
         if (DateTime.Now >= saveDue) { saveDue = DateTime.MaxValue; Settings.Save(); }
-        if (form == null && !exiting && DateTime.Now >= nextStart) StartForm();
+        if (!exiting) SyncDisplays();
     }
 
     void Exit()
@@ -823,11 +924,14 @@ class HostContext : ApplicationContext
         if (exiting) return;
         exiting = true;
         watch.Stop();
+        iconWatch.Stop();
+        iconReader.Dispose();
         if (saveDue != DateTime.MaxValue) Settings.Save();
         if (settingsWin != null) { try { settingsWin.Close(); } catch { } }
         hotkey.Dispose();
         tray.Visible = false;
-        if (form != null) form.Shutdown();
+        foreach (var display in displays.Values)
+            if (display.Form != null) display.Form.Shutdown();
         Log.Write("退出");
         ExitThread();
     }
@@ -988,16 +1092,18 @@ class SettingsForm : Form
 class WallpaperForm : Form
 {
     readonly WebView2 web;
-    readonly System.Windows.Forms.Timer iconTimer, fgTimer;
+    readonly System.Windows.Forms.Timer fgTimer;
     readonly string pageDir;
-    readonly IconReader reader = new IconReader();
-    Rectangle screen;
+    readonly Rectangle screen;
+    readonly bool primaryAtStart;
     IntPtr parentHwnd, insertAfter;
-    string lastIcons = "";
+    public const string EmptyIcons = "{\"t\":\"icons\",\"vis\":false,\"r\":[]}";
+    string lastIcons = EmptyIcons;
     int lastPause = -1;
-    bool manualPause, shuttingDown;
+    bool manualPause, shuttingDown, pageReady;
 
     public bool Fatal { get; private set; }
+    public string MonitorName { get; private set; }
 
     string page;                                        // 当前主题的页面（themes.json 里的 page）
     public Func<string> SettingsJson;                   // 页面就绪时先发给它的设置消息
@@ -1005,14 +1111,19 @@ class WallpaperForm : Form
     public string LastIcons { get { return lastIcons; } }
     protected override bool ShowWithoutActivation { get { return true; } }
 
-    public WallpaperForm(string pageDir, string page, bool manualPause)
+    public WallpaperForm(string pageDir, string page, Screen monitor, bool manualPause)
     {
         this.pageDir = pageDir;
         this.page = page;
+        screen = monitor.Bounds;
+        primaryAtStart = monitor.Primary;
+        MonitorName = monitor.DeviceName;
         this.manualPause = manualPause;
         FormBorderStyle = FormBorderStyle.None;
         ShowInTaskbar = false;
         StartPosition = FormStartPosition.Manual;
+        AutoScaleMode = AutoScaleMode.None;
+        Bounds = screen;
         BackColor = Color.FromArgb(26, 163, 196);
         Text = "DesklandWindow";
 
@@ -1023,9 +1134,6 @@ class WallpaperForm : Form
         web.CreationProperties.UserDataFolder = Path.Combine(Log.DataDir, "WebView2");
         Controls.Add(web);
 
-        iconTimer = new System.Windows.Forms.Timer();
-        iconTimer.Interval = 400;
-        iconTimer.Tick += delegate { PollIcons(); };
         fgTimer = new System.Windows.Forms.Timer();
         fgTimer.Interval = 500;
         fgTimer.Tick += delegate { PollForeground(); };
@@ -1098,6 +1206,7 @@ class WallpaperForm : Form
     public void Reload()
     {
         if (web.CoreWebView2 == null) return;
+        pageReady = false;
         try { web.CoreWebView2.Reload(); }
         catch (InvalidOperationException ex) { WebDead(ex); }
         catch (COMException ex) { WebDead(ex); }
@@ -1124,6 +1233,7 @@ class WallpaperForm : Form
     public void LoadPage(string newPage)
     {
         page = newPage;
+        pageReady = false;
         if (web.CoreWebView2 == null) return;
         try { web.CoreWebView2.Navigate(PageUrl); }
         catch (InvalidOperationException ex) { WebDead(ex); }
@@ -1161,13 +1271,17 @@ class WallpaperForm : Form
                 if (msg != null && msg.StartsWith("snapshot|")) { OnSnapshot(msg); return; }
                 if (msg != null && msg.StartsWith("recprogress|")) { if (RecordProgress != null) RecordProgress(msg.Substring(12)); return; }
                 if (msg != null && msg.StartsWith("record|")) { OnRecord(msg); return; }
+                if (msg != "ready") return;
                 if (SettingsJson != null) core.PostWebMessageAsString(SettingsJson());
-                lastIcons = ""; lastPause = -1; PollIcons(); PollForeground();
+                pageReady = true;
+                Post(lastIcons);
+                lastPause = -1;
+                PollForeground();
+                Log.Write(MonitorName + " 主题页面就绪：" + page);
             };
             core.Navigate(PageUrl);
-            iconTimer.Start();
             fgTimer.Start();
-            Log.Write("WebView2 就绪：" + core.Environment.BrowserVersionString);
+            Log.Write(MonitorName + " WebView2 就绪：" + core.Environment.BrowserVersionString);
         }
         catch (Exception ex)
         {
@@ -1179,8 +1293,9 @@ class WallpaperForm : Form
 
     void Fail(string msg)
     {
-        Log.Write(msg);
-        MessageBox.Show(msg + "\n\n" + I18n.T("errSeeLog", "path", Log.FilePath), "Deskland Preview");
+        Log.Write(MonitorName + " " + msg);
+        if (primaryAtStart)
+            MessageBox.Show(msg + "\n\n" + I18n.T("errSeeLog", "path", Log.FilePath), "Deskland Preview");
         Fatal = true;
         Shutdown();
     }
@@ -1219,7 +1334,6 @@ class WallpaperForm : Form
 
     bool AttachToDesktop()
     {
-        screen = Screen.PrimaryScreen.Bounds;          // 进程是 DPI 感知的 → 物理像素
         IntPtr progman = Native.FindWindow("Progman", null);
         if (progman == IntPtr.Zero) { Log.Write("找不到 Progman"); return false; }
         IntPtr defView = Native.FindWindowEx(progman, IntPtr.Zero, "SHELLDLL_DefView", null);
@@ -1271,11 +1385,13 @@ class WallpaperForm : Form
         style = (style & ~(Native.WS_POPUP | Native.WS_CAPTION | Native.WS_THICKFRAME)) | Native.WS_CHILD | Native.WS_VISIBLE;
         Native.SetWindowLong(Handle, Native.GWL_STYLE, style);
         Native.SetParent(Handle, parentHwnd);
+        if (Native.GetParent(Handle) != parentHwnd) return false;
 
         var pt = new Native.POINT { X = screen.X, Y = screen.Y };
-        Native.ScreenToClient(parentHwnd, ref pt);
-        Native.SetWindowPos(Handle, insertAfter, pt.X, pt.Y, screen.Width, screen.Height,
-            Native.SWP_NOACTIVATE | Native.SWP_SHOWWINDOW | Native.SWP_FRAMECHANGED);
+        if (!Native.ScreenToClient(parentHwnd, ref pt) ||
+            !Native.SetWindowPos(Handle, insertAfter, pt.X, pt.Y, screen.Width, screen.Height,
+                Native.SWP_NOACTIVATE | Native.SWP_SHOWWINDOW | Native.SWP_FRAMECHANGED))
+            return false;
         EnsureZOrder();
 
         if (raised)
@@ -1290,50 +1406,61 @@ class WallpaperForm : Form
             winEventHook = Native.SetWinEventHook(0x8000 /* OBJECT_CREATE */, 0x8004 /* OBJECT_REORDER */, IntPtr.Zero,
                 winEventProc, pid, 0, 0 /* WINEVENT_OUTOFCONTEXT */);
         }
-        Log.Write(string.Format("已挂载（{0}），屏幕 {1}", mode, screen));
+        Log.Write(string.Format("{0} 已挂载（{1}），屏幕 {2}", MonitorName, mode, screen));
         return true;
     }
 
-    // 守住顺序：紧跟在 zAnchor（图标列表 / 图标层）下面；Progman 挂法还要把系统壁纸层推到最底（被打乱才修）
+    // 多块屏幕的壁纸窗口一起排在图标层之下，彼此不争抢紧挨图标层的位置。
     int zFixes;
-    void EnsureZOrder()
+    public void EnsureZOrder()
     {
-        if (!raised || zAnchor == IntPtr.Zero || !Native.IsWindow(zAnchor)) return;
+        if (shuttingDown || !IsHandleCreated || !raised || zAnchor == IntPtr.Zero || !Native.IsWindow(zAnchor)) return;
         bool fixedAny = false;
-        if (Native.GetWindow(zAnchor, 2 /* GW_HWNDNEXT */) != Handle)
+        uint hostPid;
+        Native.GetWindowThreadProcessId(Handle, out hostPid);
+        IntPtr next = Native.GetWindow(zAnchor, 2 /* GW_HWNDNEXT */);
+        while (next != IntPtr.Zero && next != Handle)
+        {
+            uint siblingPid;
+            Native.GetWindowThreadProcessId(next, out siblingPid);
+            if (siblingPid != hostPid) break;
+            next = Native.GetWindow(next, 2);
+        }
+        if (next != Handle)
         {
             Native.SetWindowPos(Handle, zAnchor, 0, 0, 0, 0, Native.SWP_NOMOVE | Native.SWP_NOSIZE | Native.SWP_NOACTIVATE);
             fixedAny = true;
         }
         if (AttachMode == "progman")
         {
-            for (IntPtr w = Native.FindWindowEx(parentHwnd, IntPtr.Zero, "WorkerW", null); w != IntPtr.Zero;
-                 w = Native.FindWindowEx(parentHwnd, w, "WorkerW", null))
+            // 只有被提到图标层前面的 WorkerW 才需要移动，避免多个 WorkerW 互相换位。
+            for (IntPtr sibling = Native.GetWindow(zAnchor, 3 /* GW_HWNDPREV */); sibling != IntPtr.Zero;)
             {
-                if (Native.GetWindow(w, 2) != IntPtr.Zero)   // 不在最底下 → 推到最底下
+                IntPtr above = Native.GetWindow(sibling, 3);
+                var cls = new StringBuilder(64);
+                Native.GetClassName(sibling, cls, cls.Capacity);
+                if (cls.ToString() == "WorkerW")
                 {
-                    Native.SetWindowPos(w, new IntPtr(1) /* HWND_BOTTOM */, 0, 0, 0, 0, Native.SWP_NOMOVE | Native.SWP_NOSIZE | Native.SWP_NOACTIVATE);
+                    Native.SetWindowPos(sibling, new IntPtr(1) /* HWND_BOTTOM */, 0, 0, 0, 0, Native.SWP_NOMOVE | Native.SWP_NOSIZE | Native.SWP_NOACTIVATE);
                     fixedAny = true;
                 }
+                sibling = above;
             }
         }
         if (fixedAny && ++zFixes <= 20) Log.Write("修正了桌面层级（资源管理器重排了窗口）");
     }
 
     // ---------------------------------------------------------------- 读取桌面图标
-    void PollIcons()
+    public void UpdateIcons(List<Native.RECT> rects, bool visible)
     {
-        EnsureZOrder();
-        if (web.CoreWebView2 == null) return;
-        bool visible;
-        List<Native.RECT> rects = reader.Read(out visible);
-        if (rects == null) return;
         var sb = new StringBuilder();
         sb.Append("{\"t\":\"icons\",\"vis\":").Append(visible ? "true" : "false").Append(",\"r\":[");
-        for (int i = 0; i < rects.Count; i++)
+        int count = 0;
+        foreach (var r in rects)
         {
-            Native.RECT r = rects[i];
-            if (i > 0) sb.Append(',');
+            if (r.Right <= screen.Left || r.Left >= screen.Right ||
+                r.Bottom <= screen.Top || r.Top >= screen.Bottom) continue;
+            if (count++ > 0) sb.Append(',');
             sb.Append('[').Append(r.Left - screen.X).Append(',').Append(r.Top - screen.Y).Append(',')
               .Append(r.Right - screen.X).Append(',').Append(r.Bottom - screen.Y).Append(']');
         }
@@ -1342,8 +1469,8 @@ class WallpaperForm : Form
         if (json == lastIcons) return;
         lastIcons = json;
         if (IconsChanged != null) IconsChanged(json);
-        Post(json);
-        Log.Write(string.Format("图标变化：{0} 个，可见={1}", rects.Count, visible));
+        if (pageReady) Post(json);
+        Log.Write(string.Format("{0} 图标变化：{1} 个，可见={2}", MonitorName, count, visible));
     }
 
     // ---------------------------------------------------------------- 最大化 / 全屏时暂停
@@ -1360,20 +1487,21 @@ class WallpaperForm : Form
             var cls = new StringBuilder(64);
             Native.GetClassName(fg, cls, 64);
             string c = cls.ToString();
-            if (c != "Progman" && c != "WorkerW" && c != "Shell_TrayWnd" && c != "Shell_SecondaryTrayWnd")
+            Native.RECT wr;
+            if (c != "Progman" && c != "WorkerW" && c != "Shell_TrayWnd" && c != "Shell_SecondaryTrayWnd"
+                && Native.GetWindowRect(fg, out wr))
             {
-                Native.RECT wr;
-                Native.GetWindowRect(fg, out wr);
                 bool covers = wr.Left <= screen.Left && wr.Top <= screen.Top && wr.Right >= screen.Right && wr.Bottom >= screen.Bottom;
                 int cx = (wr.Left + wr.Right) / 2, cy = (wr.Top + wr.Bottom) / 2;
-                if (screen.Contains(cx, cy) && (covers || Native.IsZoomed(fg))) { pause = true; pauseBy = c; }
+                if (covers || (Native.IsZoomed(fg) && screen.Contains(cx, cy))) { pause = true; pauseBy = c; }
             }
         }
         int p = pause ? 1 : 0;
         if (p == lastPause) return;
         lastPause = p;
         Post("{\"t\":\"pause\",\"v\":" + (pause ? "true" : "false") + "}");
-        Log.Write(pause ? "暂停（有窗口最大化 / 全屏，或手动暂停）" + (pauseBy == "" ? "" : "，前台窗口类 " + pauseBy) : "继续播放");
+        Log.Write(MonitorName + (pause ? " 暂停（有窗口最大化 / 全屏，或手动暂停）" +
+            (pauseBy == "" ? "" : "，前台窗口类 " + pauseBy) : " 继续播放"));
     }
 
     // ---------------------------------------------------------------- 退出：拆掉窗口，让资源管理器重画原壁纸
@@ -1381,8 +1509,7 @@ class WallpaperForm : Form
     {
         if (shuttingDown) return;
         shuttingDown = true;
-        iconTimer.Stop(); fgTimer.Stop();
-        reader.Dispose();
+        fgTimer.Stop();
         IntPtr parent = parentHwnd;
         try { web.Dispose(); } catch { }
         if (IsHandleCreated) { Native.SetParent(Handle, IntPtr.Zero); Hide(); }
@@ -1395,8 +1522,9 @@ class WallpaperForm : Form
     protected override void OnHandleDestroyed(EventArgs e)
     {
         if (winEventHook != IntPtr.Zero) { Native.UnhookWinEvent(winEventHook); winEventHook = IntPtr.Zero; }
-        iconTimer.Stop(); fgTimer.Stop();
-        reader.Dispose();
+        fgTimer.Dispose();
+        FinishSnapshot(null, null, I18n.T("errNotReady"));
+        FinishRecord(null, null, null, I18n.T("errNotReady"));
         base.OnHandleDestroyed(e);
     }
 }
@@ -1451,8 +1579,9 @@ class IconReader : IDisposable
             var r = new Native.RECT();                 // Left = LVIR_BOUNDS（0）：图标 + 文字的整体范围
             IntPtr n;
             if (!Native.WriteProcessMemory(proc, mem, ref r, 16, out n)) { Close(); return null; }
-            Native.SendMessage(listView, 0x100E /* LVM_GETITEMRECT */, new IntPtr(i), mem);
+            if (Native.SendMessage(listView, 0x100E /* LVM_GETITEMRECT */, new IntPtr(i), mem) == IntPtr.Zero) continue;
             if (!Native.ReadProcessMemory(proc, mem, out r, 16, out n)) { Close(); return null; }
+            if (r.Left >= r.Right || r.Top >= r.Bottom) continue;
             r.Left += origin.X; r.Right += origin.X; r.Top += origin.Y; r.Bottom += origin.Y;
             result.Add(r);
         }
@@ -1503,6 +1632,7 @@ static class Native
     [DllImport("user32.dll")] public static extern IntPtr SendMessageTimeout(IntPtr h, uint msg, IntPtr w, IntPtr l, uint flags, uint timeout, out IntPtr result);
     [DllImport("user32.dll")] public static extern IntPtr SendMessage(IntPtr h, uint msg, IntPtr w, IntPtr l);
     [DllImport("user32.dll")] public static extern IntPtr SetParent(IntPtr child, IntPtr parent);
+    [DllImport("user32.dll")] public static extern IntPtr GetParent(IntPtr h);
     [DllImport("user32.dll")] public static extern int GetWindowLong(IntPtr h, int index);
     [DllImport("user32.dll")] public static extern int SetWindowLong(IntPtr h, int index, int value);
     [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int cx, int cy, uint flags);
