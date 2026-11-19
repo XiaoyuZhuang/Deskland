@@ -99,7 +99,7 @@ static class Log
         try
         {
             Directory.CreateDirectory(DataDir);
-            File.AppendAllText(FilePath, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss ") + msg + "\r\n");
+            File.AppendAllText(FilePath, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss ") + msg + "\n");
         }
         catch { }
     }
@@ -541,9 +541,6 @@ class HostContext : ApplicationContext
                 break;
             case "openShare":
                 if (lastShare != null && File.Exists(lastShare)) Process.Start(lastShare);
-                break;
-            case "openWebsite":
-                Process.Start("https://deskland.app/");
                 break;
             case "revealShare":
                 if (lastShare != null && File.Exists(lastShare)) Process.Start("explorer.exe", "/select,\"" + lastShare + "\"");

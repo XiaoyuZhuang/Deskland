@@ -3,7 +3,7 @@ Copyright (C) 2026 Deskland authors.
 Project source code and included theme assets are licensed under GNU GPL version 3.
 Third-party dependencies retain their own licenses. See LICENSE, THIRD_PARTY_NOTICES.md and TRADEMARKS.md.
 
-This fork modifies Deskland Preview as of 2026-11-18. It adds an original Forest wallpaper, extended-display rendering and per-display desktop icon layouts.
+Sylvaframe is a modified version of Deskland Preview. Changes recorded on 2026-11-18 and 2026-11-19 include independent branding, extended-display rendering and per-display desktop icon layouts, new and revised adaptive themes, and removal of upstream website and purchase links from Settings.
 Upstream project: https://github.com/BLEZZ0102/Deskland
 
 Sylvaframe is the independent name of this fork. Its pine, sunlight and stream icon is original artwork created for this fork and is distributed under GPL-3.0.

@@ -833,7 +833,7 @@ function draw(now) {
   const boy=typeof prepareMeadowBoy==='function'?prepareMeadowBoy(now,P.showBoy===1):null;
   const actor=P.showBoy===1?boy:null;
   const cat=P.showCat===1&&typeof prepareMeadowCat==='function'?prepareMeadowCat(boy,now):null;
-  // 官网不加载人物脚本，沿用原来的草地着色器和开销。
+  // 需要绘制人物时才编译包含人物的草地着色器。
   if(actor&&!actorPR)actorPR=program(FS.replace('#version 300 es','#version 300 es\n#define MEADOW_ACTOR'));
   // 两次绘制共享本帧云数据，不额外重算、上传云团。
   uploadCircles((now - T0) / 1000);

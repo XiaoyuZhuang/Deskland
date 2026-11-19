@@ -4,10 +4,9 @@
 
 ## Windows 动态壁纸
 
-1. 在仓库根目录运行 `powershell -ExecutionPolicy Bypass -File host\build.ps1`。首次构建需要从 NuGet 下载 WebView2 开发库。
-2. 若已有另一个 Deskland 壁纸实例在运行，先用它的托盘菜单退出，避免两个程序同时绘制桌面。
-3. 双击 `Start-Forest.cmd`。首次运行会在所有扩展显示器上应用森林壁纸，并打开设置。可调节空地留白、树木密度、动画速度和溪流宽度。
-4. 双击 `Stop-Forest.cmd` 或使用托盘的「退出」，恢复 Windows 原壁纸。
+1. 按 [README](README.md) 下载或构建 Sylvaframe。
+2. 打开设置并选择「森林」。可调节空地留白、树木密度、动画速度和溪流宽度。
+3. 开启「自适应」，把图标拖到溪流上。溪流会绕过图标，移走图标后恢复原来的路线。
 
 便携版需要 64 位 Windows 10 或 11 及 Microsoft Edge WebView2 Runtime。选中的主题和参数保存在当前用户的 `%LOCALAPPDATA%\Sylvaframe`。首次启动可导入旧版森林便携程序的设置。界面语言默认跟随系统，可在设置页切换简体中文和英文。
 
@@ -19,4 +18,4 @@
 
 如需在浏览器里体验完整设置页，运行 `node prototype/serve.mjs`，访问 [森林主题设置](http://localhost:5178/settings.html?theme=forest)。浏览器预览使用示例图标。
 
-本 fork 基于 Deskland Preview 的 GPL-3.0 源码。森林插画、树冠动画、空地逻辑和多屏支持为本 fork 新增。原项目的版权及许可见 [NOTICE](NOTICE) 和 [LICENSE](LICENSE)。
+森林插画、树冠动画、空地逻辑和多屏支持由 Sylvaframe 新增。版权、修改声明和许可见 [NOTICE](NOTICE) 和 [LICENSE](LICENSE)。
