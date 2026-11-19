@@ -103,7 +103,7 @@
       return a * (1 - fy) + b * fy;
     }
 
-    outline(level = 0) {
+    contours(level = 0) {
       const { cols, rows, field, step } = this;
       const joins = new Map();
       const node = id => {
@@ -138,7 +138,7 @@
         }
       }
 
-      const path = new Path2D();
+      const rings = [];
       for (const start of joins.values()) {
         if (start.visited) continue;
         const points = [];
@@ -150,7 +150,15 @@
           previous = current;
           current = next;
         }
-        if (points.length < 3 || current !== start) continue;
+        if (points.length >= 3 && current === start) rings.push(points);
+      }
+      return rings;
+    }
+
+    outline(level = 0, rings = this.contours(level)) {
+      const path = new Path2D();
+      for (const points of rings) {
+        const start = points[0];
         const end = points.at(-1);
         path.moveTo((end.x + start.x) / 2, (end.y + start.y) / 2);
         for (let i = 0; i < points.length; i++) {
