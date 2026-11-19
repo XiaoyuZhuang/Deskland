@@ -172,18 +172,114 @@
       this.clearings = [];
     }
 
-    riverAt(y) {
+    naturalRiverAt(y) {
       const t = y / this.height;
       const { bend, scale } = this;
       const center = this.width * (0.695 - t * 0.29 + 0.072 * Math.sin(t * 9 + bend)
         + 0.024 * Math.sin(t * 17 - 0.15));
       const radius = scale * this.riverWidth * (34 + t * 47 + 6 * Math.sin(t * 20 + bend));
-      return [center, radius];
+      return [center, Math.min(radius, this.width * 0.12)];
     }
 
-    riverShape(ctx, widen, drift = 0, offset = 0) {
-      const points = [];
-      for (let y = -15; y < this.height + 24; y += 7) points.push([y, ...this.riverAt(y)]);
+    riverAt(y) {
+      const [center, radius] = this.naturalRiverAt(y);
+      const sample = clamp(y / this.riverRowHeight, 0, this.riverTo.length - 1);
+      const row = Math.floor(sample);
+      const next = Math.min(row + 1, this.riverTo.length - 1);
+      const from = mix(this.riverFrom[row], this.riverFrom[next], sample - row);
+      const to = mix(this.riverTo[row], this.riverTo[next], sample - row);
+      return [center + mix(from, to, this.riverBlend), radius];
+    }
+
+    planRiver(icons, clearance) {
+      const result = new Float64Array(this.riverTo.length);
+      if (!icons.length) return result;
+
+      // Candidate offsets follow the natural centerline. Reserve room for both banks and
+      // the entire icon rectangle, including the label. Nearby rows choose a shared detour.
+      const step = Math.max(9 * this.scale, this.width / 152);
+      const padding = clamp(6 * this.scale + clearance * 0.28, 8, 34);
+      const rows = Array.from(result, (_, i) => {
+        const y = i * this.riverRowHeight;
+        const [center, radius] = this.naturalRiverAt(y);
+        const bank = radius * 1.36 + 13 * this.scale;
+        const margin = bank + padding + step * 0.6;
+        const edge = Math.min(this.width / 2, bank + 4 * this.scale);
+        const vertical = padding + this.riverRowHeight;
+        const blocked = icons
+          .filter(icon => y >= icon.y - vertical && y <= icon.y + icon.h + vertical)
+          .map(icon => [icon.x - margin, icon.x + icon.w + margin]);
+        return { center, edge, blocked };
+      });
+      if (rows.every(({ center, blocked }) => !blocked.some(([left, right]) => center > left && center < right))) {
+        return result;
+      }
+
+      const middle = Math.ceil(this.width / step);
+      const count = middle * 2 + 1;
+      const parents = new Int16Array(rows.length * count);
+      let previous = new Float64Array(count);
+      let costs = new Float64Array(count);
+      for (let i = 0; i < rows.length; i++) {
+        const { center, edge, blocked } = rows[i];
+        for (let j = 0; j < count; j++) {
+          const offset = j - middle;
+          const x = center + offset * step;
+          let cost = offset * offset * 0.18;
+          const beyondEdge = Math.max(edge - x, x - (this.width - edge), 0);
+          // On crowded desktops choose the least overlap if no corridor fits at full width.
+          if (beyondEdge > 0) cost += 10000 + beyondEdge * 40;
+          for (const [left, right] of blocked) {
+            if (x > left && x < right) cost += 7000 + Math.min(x - left, right - x) * 25;
+          }
+          let best = Infinity;
+          let parent = j;
+          for (let k = Math.max(0, j - 4); k <= Math.min(count - 1, j + 4); k++) {
+            const candidate = previous[k] + (j - k) ** 2 * 8;
+            if (candidate < best) { best = candidate; parent = k; }
+          }
+          parents[i * count + j] = parent;
+          costs[j] = cost + best;
+        }
+        [previous, costs] = [costs, previous];
+      }
+      let column = previous.reduce((lowest, value, i) => value < previous[lowest] ? i : lowest, middle);
+      for (let i = rows.length - 1; i >= 0; i--) {
+        result[i] = (column - middle) * step;
+        column = parents[i * count + column];
+      }
+
+      // Round the bends without smoothing through the side of an icon chosen above.
+      const limits = rows.map(({ center, edge, blocked }, i) => {
+        let left = edge, right = this.width - edge;
+        const x = center + result[i];
+        for (const [start, end] of blocked) {
+          if (x <= start) right = Math.min(right, start);
+          else if (x >= end) left = Math.max(left, end);
+          else return [result[i], result[i]];
+        }
+        return left <= x && x <= right ? [left - center, right - center] : [result[i], result[i]];
+      });
+      for (let pass = 0; pass < 4; pass++) {
+        const before = result.slice();
+        for (let i = 1; i < result.length - 1; i++) {
+          const [left, right] = limits[i];
+          result[i] = clamp(mix(before[i], (before[i - 1] + before[i + 1]) / 2, 0.66), left, right);
+        }
+      }
+      return result;
+    }
+
+    updateRiver(icons, clearance, snap) {
+      const next = this.planRiver(icons, clearance);
+      if (next.every((offset, i) => offset === this.riverTo[i])) return;
+      this.riverFrom = this.riverTo.map((offset, i) => mix(this.riverFrom[i], offset, this.riverBlend));
+      this.riverTo = next;
+      this.riverProgress = this.riverBlend = snap ? 1 : 0;
+      this.riverDirty = true;
+    }
+
+    riverShape(ctx, points, widen, drift = 0, offset = 0) {
       ctx.beginPath();
       for (const [y, center, radius] of points) {
         ctx.lineTo(center + offset + drift * Math.sin(y * 0.041) - radius * widen, y);
@@ -202,6 +298,14 @@
       const rand = random(params.seed);
       this.bend = (rand() - 0.5) * 1.55;
       this.riverWidth = params.stream;
+      const rows = Math.max(1, Math.ceil(height / (11 * this.scale)));
+      this.riverRowHeight = height / rows;
+      this.riverFrom = new Float64Array(rows + 1);
+      this.riverTo = new Float64Array(rows + 1);
+      this.riverBlend = this.riverProgress = 1;
+      this.riverDirty = true;
+      this.riverLayer = surface(width * Math.min(ratio, 1), height * Math.min(ratio, 1));
+      this.shoreSeed = (params.seed | 0) ^ 0x623f17;
       this.ground = surface(width * ratio, height * ratio);
       const layoutRatio = Math.min(ratio, 0.75);
       this.openGround = surface(width * layoutRatio, height * layoutRatio);
@@ -241,43 +345,56 @@
         ctx.fillRect(x - r, y - r, r * 2, r * 2);
       }
 
+      const groundColors = ['#d8be76', '#b1bb7e', '#a0ab69', '#496e58', '#35584a', '#c4a66b'];
+      for (let i = 0; i < 5000; i++) {
+        const x = rand() * width, y = rand() * height;
+        const length = scale * (0.6 + rand() * 4.5);
+        const angle = (rand() - 0.5) * 1.6;
+        const color = groundColors[Math.floor(rand() * groundColors.length)];
+        ctx.globalAlpha = 0.11 + rand() * 0.25;
+        ellipse(ctx, x, y, length, scale * (0.32 + rand() * 1.2), color, angle);
+        open.globalAlpha = 0.15;
+        ellipse(open, x, y, length * 0.64, scale * 0.56, color, angle);
+      }
+
+      for (const layer of [ctx, open]) {
+        layer.globalAlpha = 0.39;
+        layer.fillStyle = layer.createPattern(this.texture, 'repeat');
+        layer.fillRect(0, 0, width, height);
+        layer.globalAlpha = 1;
+      }
+    }
+
+    paintRiver() {
+      const { width, height, scale, riverLayer } = this;
+      const ctx = riverLayer.getContext('2d');
+      ctx.setTransform(riverLayer.width / width, 0, 0, riverLayer.height / height, 0, 0);
+      ctx.clearRect(0, 0, width, height);
+      const points = [];
+      for (let y = -15; y < height + 24; y += 7) points.push([y, ...this.riverAt(y)]);
       const water = ctx.createLinearGradient(width * 0.36, 0, width * 0.73, height);
       water.addColorStop(0, '#2d625d');
       water.addColorStop(0.55, '#367b72');
       water.addColorStop(1, '#4b9181');
-      for (const layer of [ctx, open]) {
-        this.riverShape(layer, 1.36, 8 * scale, 5 * scale);
-        layer.fillStyle = '#525d47';
-        layer.fill();
-        this.riverShape(layer, 1.18, 6 * scale);
-        layer.fillStyle = '#afac7b';
-        layer.fill();
-        this.riverShape(layer, 1, 3.5 * scale);
-        layer.fillStyle = '#82a595';
-        layer.fill();
-        this.riverShape(layer, 0.84, 2 * scale, 2 * scale);
-        layer.fillStyle = water;
-        layer.fill();
-        this.riverShape(layer, 0.45, 4 * scale, 3 * scale);
-        layer.fillStyle = 'rgba(30,83,83,.22)';
-        layer.fill();
+      for (const [widen, drift, offset, color] of [
+        [1.36, 8, 5, '#525d47'], [1.18, 6, 0, '#afac7b'], [1, 3.5, 0, '#82a595'],
+        [0.84, 2, 2, water], [0.45, 4, 3, 'rgba(30,83,83,.22)'],
+      ]) {
+        this.riverShape(ctx, points, widen, drift * scale, offset * scale);
+        ctx.fillStyle = color;
+        ctx.fill();
       }
-      const groundColors = ['#d8be76', '#b1bb7e', '#a0ab69', '#496e58', '#35584a', '#c4a66b'];
-      for (let i = 0; i < 5000; i++) {
-        const x = rand() * width, y = rand() * height;
-        const [center, radius] = this.riverAt(y);
-        const wet = Math.abs(x - center) < radius * 0.85;
-        const length = scale * (0.6 + rand() * (wet ? 7 : 4.5));
-        const angle = wet ? -1.11 + rand() * 0.45 : (rand() - 0.5) * 1.6;
-        const color = groundColors[Math.floor(rand() * groundColors.length)];
-        ctx.globalAlpha = 0.11 + rand() * 0.25;
-        ellipse(ctx, x, y, length, scale * (0.32 + rand() * 1.2),
-          wet ? (i % 3 === 0 ? '#bbd6b3' : '#2d665f') : color, angle);
-        open.globalAlpha = 0.15;
-        ellipse(open, x, y, length * 0.64, scale * 0.56, color, angle);
-      }
-      ctx.globalAlpha = open.globalAlpha = 1;
 
+      const rand = random(this.shoreSeed);
+      for (let i = 0; i < 230; i++) {
+        const y = rand() * height;
+        const [center, radius] = this.riverAt(y);
+        const x = center + radius * (rand() - 0.5) * 1.45;
+        ctx.globalAlpha = 0.11 + rand() * 0.25;
+        ellipse(ctx, x, y, scale * (0.6 + rand() * 7), scale * (0.32 + rand() * 1.2),
+          i % 3 === 0 ? '#bbd6b3' : '#2d665f', -1.11 + rand() * 0.45);
+      }
+      ctx.globalAlpha = 1;
       for (let i = 0; i < 165; i++) {
         const y = rand() * height;
         const [center, radius] = this.riverAt(y);
@@ -296,12 +413,17 @@
         }
       }
 
-      for (const layer of [ctx, open]) {
-        layer.globalAlpha = 0.39;
-        layer.fillStyle = layer.createPattern(this.texture, 'repeat');
-        layer.fillRect(0, 0, width, height);
-        layer.globalAlpha = 1;
+      ctx.globalCompositeOperation = 'source-atop';
+      ctx.globalAlpha = 0.39;
+      ctx.fillStyle = ctx.createPattern(this.texture, 'repeat');
+      ctx.fillRect(0, 0, width, height);
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 1;
+      for (const tree of this.trees) {
+        const [center, radius] = this.riverAt(tree.y - tree.height * 0.21);
+        tree.dryness = smooth(8 * scale, 31 * scale, Math.abs(tree.x - center) - radius);
       }
+      this.riverDirty = false;
     }
 
     populate(rand) {
@@ -311,11 +433,9 @@
         for (let x = -spacing; x < width + spacing; x += spacing) {
           const px = x + rand() * spacing * 1.12, py = y + rand() * spacing * 0.93;
           const treeHeight = scale * (44 + rand() ** 1.17 * 88 + 19 * clamp(py / height));
-          const [center, radius] = this.riverAt(py - treeHeight * 0.21);
-          const nearWater = (Math.abs(px - center) - radius) / scale;
           const grove = 0.5 + Math.sin(px / (126 * scale) + py / (173 * scale)) *
             Math.cos(py / (122 * scale) - px / (279 * scale)) * 0.5;
-          if (nearWater < 10 || rand() < (nearWater < 56 ? 0.48 : 0.08)) continue;
+          if (rand() < 0.08) continue;
           const color = rand() < 0.085 && grove > 0.29 ? 5 : Math.floor(rand() * 5);
           const variant = rand() < 0.61 && color !== 5 ? Math.floor(rand() * 2) : 2 + Math.floor(rand() * 2);
           this.trees.push({
@@ -335,6 +455,7 @@
     }
 
     setLayout(icons, clearance, density, snap) {
+      this.updateRiver(icons, clearance, snap);
       if (!snap) {
         // Keep the visible intermediate state when another icon moves during a transition.
         const previous = this.previousLayout.getContext('2d');
@@ -385,6 +506,12 @@
     advance(seconds, snap) {
       this.blend = snap ? 1 : Math.min(1, this.blend + seconds * 2.2);
       let moving = this.blend < 1;
+      if (this.riverProgress < 1) {
+        this.riverProgress = snap ? 1 : Math.min(1, this.riverProgress + seconds * 2);
+        this.riverBlend = smooth(0, 1, this.riverProgress);
+        this.riverDirty = true;
+        moving = true;
+      }
       for (const tree of this.trees) {
         if (tree.grow === tree.want) continue;
         const step = seconds * (tree.want ? 1.8 : 2.9);
@@ -405,6 +532,7 @@
 
     paint(ctx, pixelsX, pixelsY, time) {
       const { width, height, ground, layout, scale } = this;
+      if (this.riverDirty) this.paintRiver();
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.globalAlpha = 1;
       ctx.drawImage(ground, 0, 0, pixelsX, pixelsY);
@@ -415,6 +543,8 @@
       }
       ctx.globalAlpha = blend;
       ctx.drawImage(layout, 0, 0, pixelsX, pixelsY);
+      ctx.globalAlpha = 1;
+      ctx.drawImage(this.riverLayer, 0, 0, pixelsX, pixelsY);
       const sx = pixelsX / width, sy = pixelsY / height;
       ctx.setTransform(sx, 0, 0, sy, 0, 0);
       ctx.lineCap = 'round';
@@ -433,18 +563,18 @@
         ctx.stroke();
       }
       for (const tree of this.trees) {
-        if (tree.grow <= 0) continue;
-        ctx.globalAlpha = tree.grow * 0.21;
+        if (tree.grow <= 0 || tree.dryness <= 0) continue;
+        ctx.globalAlpha = tree.grow * tree.dryness * 0.21;
         ellipse(ctx, tree.x + tree.width * 0.21, tree.y - tree.height * 0.07,
           tree.width * 0.58, tree.height * 0.11, '#243f39', -0.29);
       }
       for (const tree of this.trees) {
-        if (tree.grow <= 0) continue;
+        if (tree.grow <= 0 || tree.dryness <= 0) continue;
         const sway = Math.sin(time * 1.43 * tree.stiffness + tree.phase) * 0.019
           + Math.sin(time * 0.87 + tree.x * 0.007 + tree.y * 0.019) * 0.032;
         const growth = 0.60 + tree.grow * 0.40;
         ctx.setTransform(sx, 0, sway * sx, sy, tree.x * sx, tree.y * sy);
-        ctx.globalAlpha = tree.grow;
+        ctx.globalAlpha = tree.grow * tree.dryness;
         ctx.drawImage(tree.sprite, -tree.width * growth / 2, -tree.height * growth * 0.93,
           tree.width * growth, tree.height * growth);
       }
