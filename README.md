@@ -4,11 +4,15 @@
 
 **Adaptive Windows wallpapers that make desktop icons part of the scenery.**
 
-Sylvaframe is an independent fork of Deskland Preview. It adds independently rendered wallpapers for extended displays and includes 11 usable themes. Move a desktop icon and the shoreline, cloud, lawn, or clearing around it changes. Each theme renders locally.
+Sylvaframe is an independent fork of Deskland Preview. The current source includes 12 adaptive themes. Each extended display renders its own wallpaper using the icons on that screen.
 
 [Windows downloads](https://github.com/XiaoyuZhuang/Deskland/releases/latest) · [简体中文](#中文说明) · [Build from source](#build-from-source)
 
-![Forest theme preview](prototype/thumbs/forest-creek.webp)
+## Recent updates
+
+**November 19, 2026** — Lake adds fish, ripples, and lily pads that follow desktop icons. The pads have rounded edges, fine veins, and subtle water droplets. The Forest stream now bends around icons dropped into it and returns to its original course when they move away.
+
+![Lake theme with fish and lily pads](prototype/thumbs/lake-waterlilies.webp)
 
 ## Themes
 
@@ -16,7 +20,8 @@ Sylvaframe is an independent fork of Deskland Preview. It adds independently ren
 | --- | --- |
 | Beach | An icon-shaped coastline with waves, palms, seabirds, and kayaks |
 | Meadow | Grassland with drifting clouds, a kite, and a black cat |
-| Forest | A woodland creek and clearings that follow your icons |
+| Forest | The stream bends around icons, and the trees make room for clearings |
+| Lake | Fish glide through clear water, and floating lily pads hold your icons |
 | Lotus Pond | Leaves and blossoms make room for icons as koi swim around them |
 | Pink Forest | Watercolor trees, birds, and clearings around icons |
 | Old Map | Icons form seas on parchment, while wagons travel between towns |
@@ -26,11 +31,13 @@ Sylvaframe is an independent fork of Deskland Preview. It adds independently ren
 | Hand-drawn City | Lawns follow icons and the green canal reroutes around them |
 | Nautical Chart | Parchment islands, harbors, lighthouses, shipping routes, and a sea monster |
 
-The theme browser puts the 11 usable themes first. Lake and Colorful City are locked previews.
+The theme browser puts the 12 usable themes first. Colorful City appears as a locked preview.
 
 ## Run on Windows
 
-Sylvaframe supports 64-bit Windows 10 and Windows 11 and uses Microsoft Edge WebView2 Runtime. The latest published Windows packages are on this fork’s [Releases page](https://github.com/XiaoyuZhuang/Deskland/releases/latest). For a portable ZIP, extract the whole archive and run `Start-Forest.cmd` from the extracted folder.
+Sylvaframe supports 64-bit Windows 10 and Windows 11 and uses Microsoft Edge WebView2 Runtime. Each release lists its Windows downloads and the themes it includes. [Windows releases](https://github.com/XiaoyuZhuang/Deskland/releases/latest)
+
+For a portable ZIP, extract the whole archive and run `Start-Forest.cmd` from the extracted folder.
 
 Open Settings from the tray icon to choose a theme. Theme settings save automatically. The tray also offers pause, reload, start on sign-in, and exit. Exiting restores the original wallpaper. Sylvaframe saves its settings and logs under `%LOCALAPPDATA%\Sylvaframe`.
 
@@ -75,13 +82,18 @@ Sylvaframe 是 Deskland Preview 的独立 fork。它支持扩展多屏，每块�
 
 [Windows 下载](https://github.com/XiaoyuZhuang/Deskland/releases/latest) · [English](#sylvaframe) · [从源码运行](#从源码运行)
 
+### 近期更新
+
+**2026 年 11 月 19 日**新增「湖泊」。鱼群在水下游动，荷叶托住桌面图标和文件名，图标移动时荷叶也会跟随。新版荷叶有更圆润的叶缘、细叶脉和小水珠。森林河流也能绕开落在水面上的图标，图标移走后会恢复原来的走向。
+
 ### 可用主题
 
 | 主题 | 场景 |
 | --- | --- |
 | 沙滩 | 海岸线随图标变化，岸边有海浪、椰子树、海鸥和皮划艇 |
 | 草地 | 云团和云影在草地上移动，还有风筝和小黑猫 |
-| 森林 | 小溪穿过树林，林间空地跟随图标 |
+| 森林 | 小溪绕开桌面图标，树木让出林间空地 |
+| 湖泊 | 鱼群在水下游动，漂浮的荷叶托住桌面图标 |
 | 荷塘 | 荷叶和荷花让开图标，锦鲤游过留下涟漪 |
 | 粉色森林 | 水彩树冠轻摆，小鸟在树梢间飞过，图标周围自动留白 |
 | 老地图 | 羊皮纸大陆随图标形成海域，马车沿虚线道路在城镇间往返 |
@@ -91,11 +103,13 @@ Sylvaframe 是 Deskland Preview 的独立 fork。它支持扩展多屏，每块�
 | 手绘城市 | 图标周围长出草坪，绿色运河重新规划路线，小船沿水道行驶 |
 | 航海地图 | 羊皮纸海图上的岛屿、港口、灯塔、帆船航线和海怪 |
 
-设置页先显示 11 个可用主题，湖泊和彩色城市是锁定预览。
+设置页先显示 12 个可用主题，彩色城市保留为锁定预览。
 
 ### 在 Windows 上运行
 
-支持 64 位 Windows 10 和 Windows 11，需要 Microsoft Edge WebView2 Runtime。安装包和便携包见本 fork 的 [Releases 页面](https://github.com/XiaoyuZhuang/Deskland/releases/latest)。使用便携包时，请先完整解压，再运行 `Start-Forest.cmd`。
+支持 64 位 Windows 10 和 Windows 11，需要 Microsoft Edge WebView2 Runtime。各版本提供的安装包、便携包和主题见本 fork 的发布说明。[Windows 下载](https://github.com/XiaoyuZhuang/Deskland/releases/latest)
+
+使用便携包时，请先完整解压，再运行 `Start-Forest.cmd`。
 
 双击托盘图标打开设置，选好主题后参数会自动保存。托盘菜单提供暂停、重新载入、开机自启和退出，退出后会恢复 Windows 原壁纸。设置和日志保存在 `%LOCALAPPDATA%\Sylvaframe`。
 

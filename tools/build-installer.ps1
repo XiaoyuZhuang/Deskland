@@ -42,7 +42,7 @@ $sources = @('.gitattributes', '.gitignore', 'AGENTS.md', 'LICENSE', 'NOTICE', '
 $themeFiles = @('flat.html', 'meadow.html', 'forest.html', 'forest.css', 'forest.js', 'forest-scene.js', 'lotus.html', 'lotus.js', 'pinkforest.html', 'pinkforest-scene.js',
     'worldmap.html', 'worldmap-terrain.js', 'worldmap-scene.js',
     'scenery.js', 'island-scenes.js', 'sky-scene.js', 'city-scene.js', 'meadow-clouds.js',
-    'ocean.html', 'maldives.html', 'sky.html', 'handdrawn-city.html', 'nauticalmap.html',
+    'ocean.html', 'maldives.html', 'sky.html', 'handdrawn-city.html', 'nauticalmap.html', 'lake.html', 'lake-scene.js',
     'settings.html', 'thumbs-data.js', 'share.js', 'serve.mjs', 'themes.json', 'beach-palms.js', 'meadow-boy.js', 'meadow-cat.js',
     'i18n\en.json', 'i18n\zh-CN.json', 'thumbs\beach.webp', 'thumbs\meadow.webp',
     'assets\beach-coconut-palm-v2.png', 'assets\beach-coconut-palm-curved.png', 'assets\beach-coconut-palm-airy.png', 'assets\beach-coconut-palm-windswept.png', 'assets\beach-coconut-palm-arch.png',
@@ -50,9 +50,9 @@ $themeFiles = @('flat.html', 'meadow.html', 'forest.html', 'forest.css', 'forest
 $themes = (Get-Content -LiteralPath (Join-Path $root 'prototype\themes.json') -Raw -Encoding UTF8 | ConvertFrom-Json).themes
 $ready = @($themes | Where-Object { $_.status -eq 'ready' })
 $locked = @($themes | Where-Object { $_.locked -eq $true })
-if ($themes.Count -ne 13 -or $ready.Count -ne 11 -or $locked.Count -ne 2 -or
-    (($ready.id | Sort-Object) -join ',' -ne 'beach,beach-turquoise,forest,lotus,map,meadow,nauticalmap,ocean,pinkforest,sky,worldmap')) {
-    throw 'Expected eleven usable themes and two locked preview cards'
+if ($themes.Count -ne 13 -or $ready.Count -ne 12 -or $locked.Count -ne 1 -or
+    (($ready.id | Sort-Object) -join ',' -ne 'beach,beach-turquoise,forest,lake,lotus,map,meadow,nauticalmap,ocean,pinkforest,sky,worldmap')) {
+    throw 'Expected twelve usable themes and one locked preview card'
 }
 foreach ($theme in $locked) {
     if ($theme.page -or $theme.groups) { throw 'Locked themes must not contain page source or settings' }

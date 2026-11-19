@@ -162,37 +162,23 @@
     },
     "lake": {
       "name": "Lake",
-      "desc": "Watercolor grass surrounds a clear lake, with painted stones beneath the shallows and crisp reflections of puffy clouds",
+      "desc": "Fish glide through clear water as floating lily pads hold your desktop icons.",
       "groups": [
-        "Shore",
-        "Water",
-        "Clouds"
+        "Lily pads",
+        "Water"
       ],
       "params": {
         "sigma": {
-          "label": "Grassy shore",
-          "hint": "How far the grassy banks extend from your icons"
+          "label": "Lily pad size",
+          "hint": "Extra space around the desktop icon and its label"
         },
-        "warp": {
-          "label": "Winding shore",
-          "hint": "How much the lakeshore curves"
-        },
-        "shoal": {
-          "label": "Clear shallows",
-          "hint": "How far the underwater stones remain visible from the shore"
-        },
-        "depth": {
-          "label": "Water depth",
-          "hint": "The distance from turquoise blue shallows to teal deeper water"
-        },
-        "flow": {
-          "label": "Water movement",
-          "hint": "The speed of gentle ripples, shimmering light and cloud reflections"
-        },
-        "clouds": {
-          "label": "Cloud count",
-          "hint": "The number of reflected clouds on the lake; set to 0 to hide",
+        "fish": {
+          "label": "Fish count",
           "unit": ""
+        },
+        "wind": {
+          "label": "Animation speed",
+          "hint": "How fast the fish swim and the water ripples"
         }
       }
     },

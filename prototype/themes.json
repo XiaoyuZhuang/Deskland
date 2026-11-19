@@ -302,11 +302,54 @@
     {
       "id": "lake",
       "name": "湖泊",
-      "desc": "水彩草地环绕清澈湖水，近岸浅水中显露青绿石块，湖面清晰映出圆鼓鼓的云朵",
-      "status": "locked",
-      "locked": true,
-      "thumb": "url(thumbs/lake.webp?v=e22cfe9d6a) center / cover no-repeat, linear-gradient(110deg, #abc475 0%, #bdce88 31%, #a79b66 33%, #0bb8bb 41%, #0fa4a5 66%, #12948e 100%)",
-      "thumbSource": "custom"
+      "desc": "鱼群在清澈的湖水里穿游，荷叶漂在水面上，托住桌面图标。",
+      "page": "lake.html",
+      "status": "ready",
+      "product": "free",
+      "adaptive": true,
+      "thumb": "url(thumbs/lake-waterlilies.webp?v=leaf-detail) center / cover no-repeat, #22606a",
+      "thumbSource": "rendered",
+      "groups": [
+        {
+          "name": "荷叶",
+          "params": [
+            {
+              "key": "sigma",
+              "label": "荷叶大小",
+              "hint": "调整荷叶在桌面图标和文件名周围多留多少空间",
+              "min": 0,
+              "max": 40,
+              "step": 1,
+              "default": 10,
+              "unit": "px"
+            }
+          ]
+        },
+        {
+          "name": "湖水",
+          "params": [
+            {
+              "key": "fish",
+              "label": "游鱼数量",
+              "min": 0,
+              "max": 24,
+              "step": 1,
+              "default": 15,
+              "unit": "条"
+            },
+            {
+              "key": "wind",
+              "label": "动画速度",
+              "hint": "调整鱼群游动与水纹起伏的速度",
+              "min": 0,
+              "max": 2,
+              "step": 0.05,
+              "default": 1,
+              "format": "times"
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "sky",
