@@ -330,7 +330,7 @@
     <div class="purchase-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></div>
     <h3 id="purchaseTitle" data-i18n="purchaseTitle">原项目的壁纸版</h3>
     <p class="sub" id="purchaseTheme"></p>
-    <p class="sub" data-i18n="purchaseMessage">Sylvaframe 包含森林、沙滩和草地。更多主题可在原项目的 Deskland 壁纸版中查看。</p>
+    <p class="sub" data-i18n="purchaseMessage">更多主题可在原项目的 Deskland 壁纸版中查看。</p>
     <div class="actions">
       <button class="ghost-btn" id="purchaseLater" data-i18n="purchaseLater">继续体验</button>
       <button class="ghost-btn primary" id="purchaseWebsite" data-i18n="purchaseWebsite">访问原项目官网</button>
@@ -492,7 +492,10 @@ function fmt(p, v) {
 const thumbUrl = th => (th.thumbSource === 'rendered' ? '' : window.DESKLAND_THUMBS?.[th.id]) ||
   String(th.thumb || '').match(/^url\(([^)]+)\)/)?.[1] || '';
 function renderThemes() {
-  $('themes').innerHTML = state.registry.themes.map(th => {
+  const available = th => th.status === 'ready' && th.locked !== true;
+  const themes = state.registry.themes;
+  const ordered = [...themes.filter(available), ...themes.filter(th => !available(th))];
+  $('themes').innerHTML = ordered.map(th => {
     const locked = th.locked === true, ready = th.status === 'ready', on = th.id === state.theme;
     const label = locked ? t('lockedTitle', { name: th.name }) : th.name;
     return `<button class="theme${on ? ' on' : ''}${locked ? ' locked' : ''}" data-id="${th.id}" data-locked="${locked}" aria-pressed="${on}" aria-label="${label}" ${ready || locked ? '' : 'disabled'}>

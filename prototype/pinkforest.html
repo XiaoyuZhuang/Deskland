@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>粉色森林 · Sylvaframe</title>
+  <link rel="icon" type="image/png" href="assets/sylvaframe.png">
+  <link rel="stylesheet" href="forest.css">
+  <style>
+    :root { --forest-bg: #f7efe4; --icon-color: #573d45; --icon-shadow: 0 1px 2px #fff;
+      --icon-border: #a3607270; --icon-hover: #edbccc42; --ghost-label: #805965a0; --demo-bg: #66434bea; }
+  </style>
+</head>
+<body>
+  <canvas id="forest" aria-hidden="true"></canvas>
+  <div id="icons"></div>
+  <div id="demo" hidden>
+    <span id="demo-hint">拖动示例图标，改变林间空地</span>
+    <button type="button" id="toggle-motion">暂停动画</button>
+  </div>
+  <script src="pinkforest-scene.js"></script>
+  <script src="forest.js"></script>
+  <script src="share.js"></script>
+</body>
+</html>

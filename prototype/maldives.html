@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>马尔代夫 · Sylvaframe</title>
+  <link rel="icon" type="image/png" href="assets/sylvaframe.png">
+  <link rel="stylesheet" href="forest.css">
+  <style>
+    :root { --forest-bg: #31aeb0; --icon-color: #32574d; --icon-shadow: 0 1px 2px #fff;
+      --icon-border: #32574d80; --icon-hover: #fff6db55; --ghost-label: #32574da0; --demo-bg: #32574deb; }
+  </style>
+</head>
+<body data-scene="maldives">
+  <canvas id="forest" aria-hidden="true"></canvas>
+  <div id="icons"></div>
+  <div id="demo" hidden>
+    <span id="demo-hint">拖动示例图标，移动沙岛</span>
+    <button type="button" id="toggle-motion">暂停动画</button>
+  </div>
+  <script src="worldmap-terrain.js"></script>
+  <script src="scenery.js"></script>
+  <script src="island-scenes.js"></script>
+  <script src="forest.js"></script>
+  <script src="share.js"></script>
+</body>
+</html>

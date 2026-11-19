@@ -2,230 +2,130 @@
 
 <img src="prototype/assets/sylvaframe.png" width="64" height="64" alt="Sylvaframe icon">
 
-Thanks to **BLEZZ0102** and the contributors to Deskland for open-sourcing the Windows wallpaper host and the Beach and Meadow themes. Sylvaframe is an independent fork that adds an original **Forest** theme and support for extended displays. Each screen renders its own wallpaper and adapts to the icons on that screen. [Upstream project](https://github.com/BLEZZ0102/Deskland)
+**Adaptive Windows wallpapers that make desktop icons part of the scenery.**
 
-**Adaptive Windows wallpaper that makes your desktop icons part of the scenery.**
+Sylvaframe is an independent fork of Deskland Preview. It adds independently rendered wallpapers for extended displays and includes 11 usable themes. Move a desktop icon and the shoreline, cloud, lawn, or clearing around it changes. Each theme renders locally.
 
-Sylvaframe turns the space around your icons into a living landscape. Move, add or remove an icon and the beach, meadow, clouds and shadows quietly reshape around it — in real time, without AI, an account or an API key.
+[Windows downloads](https://github.com/XiaoyuZhuang/Deskland/releases/latest) · [简体中文](#中文说明) · [Build from source](#build-from-source)
 
-This fork includes **Beach**, **Meadow** and **Forest**, the Windows host, settings and sharing tools.
+![Forest theme preview](prototype/thumbs/forest-creek.webp)
 
-**English** · [简体中文](#中文说明) · [Upstream website](https://deskland.app) · [Features](#features) · [Build from source](#build-from-source)
+## Themes
 
-![Meadow — included in Deskland Preview](docs/images/meadow.webp)
+| Theme | Scenery |
+| --- | --- |
+| Beach | An icon-shaped coastline with waves, palms, seabirds, and kayaks |
+| Meadow | Grassland with drifting clouds, a kite, and a black cat |
+| Forest | A woodland creek and clearings that follow your icons |
+| Lotus Pond | Leaves and blossoms make room for icons as koi swim around them |
+| Pink Forest | Watercolor trees, birds, and clearings around icons |
+| Old Map | Icons form seas on parchment, while wagons travel between towns |
+| Ocean | Green islands form around icons in deep blue water with sailboats |
+| Maldives | Pale sand islands, mint shallows, reefs, palms, and fish schools |
+| Sky | Icons sit on puffy clouds at day, dusk, or night |
+| Hand-drawn City | Lawns follow icons and the green canal reroutes around them |
+| Nautical Chart | Parchment islands, harbors, lighthouses, shipping routes, and a sea monster |
 
-![Beach — included in Deskland Preview](docs/images/beach.webp)
+The theme browser puts the 11 usable themes first. Lake and Colorful City are locked previews.
 
-![Maldives — locked-theme preview](docs/images/maldives.webp)
+## Run on Windows
 
-Meadow and Beach are included in Preview. Maldives is shown as a locked-theme preview.
+Sylvaframe supports 64-bit Windows 10 and Windows 11 and uses Microsoft Edge WebView2 Runtime. The latest published Windows packages are on this fork’s [Releases page](https://github.com/XiaoyuZhuang/Deskland/releases/latest). For a portable ZIP, extract the whole archive and run `Start-Forest.cmd` from the extracted folder.
 
-## Included themes
+Open Settings from the tray icon to choose a theme. Theme settings save automatically. The tray also offers pause, reload, start on sign-in, and exit. Exiting restores the original wallpaper. Sylvaframe saves its settings and logs under `%LOCALAPPDATA%\Sylvaframe`.
 
-| Beach | Meadow | Forest |
-| --- | --- | --- |
-| ![Beach theme](prototype/thumbs/beach.webp) | ![Meadow theme](prototype/thumbs/meadow.webp) | ![Forest theme](prototype/thumbs/forest-creek.webp) |
-| Turquoise waves, kayaks, seabirds and coconut palms. | Drifting clouds and shadows, a boy flying a kite and a little black cat. | Swaying treetops and a creek, with woodland clearings that follow your icons. |
-
-The theme browser also shows 10 locked themes as a preview of the full Wallpaper edition. Their names, descriptions and thumbnails are included.
-
-## Features
-
-- **Adaptive scenery:** uses the real positions of desktop icons and transitions smoothly when they move.
-- **Extended displays:** renders independently on each display and sends each wallpaper the icons on its own screen.
-- **Three complete themes:** settings for Beach, Meadow and Forest are saved between sessions.
-- **Made for the desktop:** tray controls, startup on sign-in and automatic pause when a window is maximized or full-screen.
-- **Private sharing:** image and animation exports use sample icons and color blocks, never a screenshot of your desktop or real file names.
-- **Independent installation:** Sylvaframe uses its own install directory, settings, startup entry and instance identity, so it can coexist with other Deskland builds.
-- **English and Simplified Chinese:** no sign-in, purchase restoration, update service or store API is included.
-
-## Requirements
-
-- Windows 10 or Windows 11, 64-bit.
-- Microsoft Edge WebView2 Runtime.
-- PowerShell and the .NET Framework C# compiler included with Windows; no .NET SDK installation is required.
-- An internet connection for the first build, which downloads the WebView2 development library.
-- Node.js only if you want to run the browser preview.
-
-Sylvaframe renders on all extended displays and targets 30 fps on integrated graphics. Settings preview and sharing use the primary display.
+Each extended display renders only its own icons. Settings preview and sharing use the primary display. Shared images and animations substitute sample icons and label shapes for real filenames.
 
 ## Build from source
 
-Open PowerShell in the repository root:
+Open PowerShell in the repository root and run:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File host\build.ps1
 .\Start-Forest.cmd
 ```
 
-Keep `host/` and `prototype/` together. Build output is written to `host/bin/`.
+The build uses the Windows .NET Framework C# compiler and downloads the WebView2 SDK the first time. Keep `host/` and `prototype/` together. The executable is written to `host/bin/`.
 
-Run `Start-Forest.cmd` again or double-click the tray icon to open Settings. To exit and restore the original Windows wallpaper, use the tray menu or run:
-
-```powershell
-.\Stop-Forest.cmd
-```
-
-The launch script uses `%LOCALAPPDATA%\Sylvaframe` for this fork's settings and logs. See [Forest quick start](FOREST.md) for the desktop and offline browser instructions.
-
-## Browser preview
-
-```powershell
-node prototype\serve.mjs
-```
-
-Open **http://localhost:5178/settings.html**. The browser uses sample icons; adaptation to real desktop icons requires the Windows host.
-
-## Windows installer
-
-Build the NSIS installer without installing global development tools:
+To build the Windows installer, run:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File tools\build-installer.ps1
 ```
 
-The first build downloads portable NSIS and Microsoft's WebView2 bootstrapper. Artifacts are written to `dist/` with SHA256 checksums and a matching source ZIP.
+The first installer build downloads portable NSIS and the signed WebView2 bootstrapper. The installer, file manifest, and SHA-256 checksum are written under `dist/`. The installer targets the current user’s `Programs\Sylvaframe` directory.
 
-The installer targets the current user's `Programs\Sylvaframe` directory and does not require administrator rights. If WebView2 is missing, its bootstrapper requires an internet connection. Uninstalling preserves user settings.
+## Browser preview
 
-The original project's Windows installer is available from its release page. [Upstream Deskland Preview releases](https://github.com/BLEZZ0102/Deskland/releases/latest)
-
-## Project layout
-
-| Path | Contents |
-| --- | --- |
-| `host/` | Windows host, build scripts and application manifest |
-| `prototype/flat.html` | Beach theme |
-| `prototype/meadow.html` | Meadow theme |
-| `prototype/forest.html` | Forest theme |
-| `prototype/settings.html` | Settings interface |
-| `prototype/themes.json` | Full free-theme definitions and locked-theme display metadata |
-| `prototype/share.js` | Privacy-preserving image and animation sharing |
-| `prototype/assets/` | Images used by the included themes |
-| `tools/` | Installer build tooling |
-
-## Known limitations
-
-- Settings preview and sharing show the primary display.
-- Windows Spotlight or a wallpaper slideshow can briefly flash when Windows changes the background image.
-- Preview does not include account sign-in, entitlement restoration, automatic updates or the other themes' implementation.
+With Node.js installed, run `node prototype\serve.mjs` and open [the local settings page](http://localhost:5178/settings.html). The browser preview uses sample icons. The Windows host supplies real desktop icon positions.
 
 ## Credits and license
 
-Source code and included theme assets are released under [GPL-3.0](LICENSE). Third-party dependencies are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Thanks to **BLEZZ0102** and the Deskland contributors for the Windows host and the original Beach and Meadow themes. [Upstream Deskland](https://github.com/BLEZZ0102/Deskland)
 
-The Deskland name and icon are not licensed as trademarks; modified distributions should use their own name and icon. See [TRADEMARKS.md](TRADEMARKS.md).
-
-For Sylvaframe feedback, open an issue in this fork. [Sylvaframe Issues](https://github.com/XiaoyuZhuang/Deskland/issues)
+The project is released under [GPL-3.0](LICENSE). See the [third-party notices](THIRD_PARTY_NOTICES.md), [trademark notes](TRADEMARKS.md), and [this fork’s issue tracker](https://github.com/XiaoyuZhuang/Deskland/issues).
 
 ---
 
 ## 中文说明
 
-感谢 **BLEZZ0102** 和所有贡献者开源 Deskland 的 Windows 壁纸宿主、沙滩与草地主题。Sylvaframe 是独立 fork，新增了原创「森林」主题和扩展多屏支持，并使用自己的名称和图标。每块屏幕各自渲染，林间空地跟随该屏幕上的图标。[原仓库](https://github.com/BLEZZ0102/Deskland)
-
-[English](#sylvaframe) · **简体中文** · [森林使用说明](FOREST.md)
-
 **让桌面图标成为风景的一部分。**
 
-Sylvaframe 是一款 Windows 自适应动态壁纸。移动、添加或删除桌面图标时，海岸线、草地、云朵和阴影会实时围绕图标调整。全部在本地实时演算，不使用 AI，无需账号或 API Key。
+Sylvaframe 是 Deskland Preview 的独立 fork。它支持扩展多屏，每块屏幕单独渲染，并根据本屏的桌面图标调整风景。移动图标时，岛屿、云团、草坪或林间空地会随之变化。壁纸在本地实时绘制。
 
-本 fork 包含沙滩、草地和森林三个主题，以及 Windows 宿主、设置界面与分享工具。
+[Windows 下载](https://github.com/XiaoyuZhuang/Deskland/releases/latest) · [English](#sylvaframe) · [从源码运行](#从源码运行)
 
-[原项目官网](https://deskland.app) · [从源码运行](#build-from-source) · [许可](#credits-and-license)
+### 可用主题
 
-### 包含的主题
+| 主题 | 场景 |
+| --- | --- |
+| 沙滩 | 海岸线随图标变化，岸边有海浪、椰子树、海鸥和皮划艇 |
+| 草地 | 云团和云影在草地上移动，还有风筝和小黑猫 |
+| 森林 | 小溪穿过树林，林间空地跟随图标 |
+| 荷塘 | 荷叶和荷花让开图标，锦鲤游过留下涟漪 |
+| 粉色森林 | 水彩树冠轻摆，小鸟在树梢间飞过，图标周围自动留白 |
+| 老地图 | 羊皮纸大陆随图标形成海域，马车沿虚线道路在城镇间往返 |
+| 大海 | 图标周围形成绿岛，白帆驶过深蓝海面 |
+| 马尔代夫 | 浅色沙岛、薄荷色浅滩、椰子树、珊瑚礁和鱼群 |
+| 天空 | 圆鼓鼓的白云托住图标，可切换白天、黄昏和夜晚 |
+| 手绘城市 | 图标周围长出草坪，绿色运河重新规划路线，小船沿水道行驶 |
+| 航海地图 | 羊皮纸海图上的岛屿、港口、灯塔、帆船航线和海怪 |
 
-| 沙滩 | 草地 | 森林 |
-| --- | --- | --- |
-| ![沙滩主题](prototype/thumbs/beach.webp) | ![草地主题](prototype/thumbs/meadow.webp) | ![森林主题](prototype/thumbs/forest-creek.webp) |
-| 海浪、皮划艇、海鸟和椰子树。 | 漂浮的云与云影、放风筝的男孩和小黑猫。 | 树梢随风摆动，小溪穿过树林，林间空地跟随图标。 |
+设置页先显示 11 个可用主题，湖泊和彩色城市是锁定预览。
 
-主题列表还展示另外 10 个锁定主题，仅包含名称、简介和缩略图。
+### 在 Windows 上运行
 
-### 功能
+支持 64 位 Windows 10 和 Windows 11，需要 Microsoft Edge WebView2 Runtime。安装包和便携包见本 fork 的 [Releases 页面](https://github.com/XiaoyuZhuang/Deskland/releases/latest)。使用便携包时，请先完整解压，再运行 `Start-Forest.cmd`。
 
-- **图标自适应：**读取真实桌面图标的位置，在移动、添加或删除时平滑调整场景。
-- **扩展多屏：**每块显示器独立渲染，并按屏幕分配桌面图标的位置。
-- **三个完整主题：**沙滩、草地和森林的参数均可调整并自动保存。
-- **适合常驻桌面：**托盘控制、开机自动启动，前台窗口最大化或全屏时自动暂停。
-- **隐私分享：**图片和动画使用示例图标与名字色块，不截取桌面窗口或真实文件名。
-- **独立安装：**安装目录、用户数据、启动项和运行实例标识均独立，可与其他 Deskland 版本共存。
-- **简体中文和英文：**不包含登录、购买恢复、自动更新或商店接口。
+双击托盘图标打开设置，选好主题后参数会自动保存。托盘菜单提供暂停、重新载入、开机自启和退出，退出后会恢复 Windows 原壁纸。设置和日志保存在 `%LOCALAPPDATA%\Sylvaframe`。
 
-### 系统要求
-
-- Windows 10 / Windows 11，64 位。
-- Microsoft Edge WebView2 Runtime。
-- 使用 Windows 自带的 .NET Framework C# 编译器，无需安装 .NET SDK。
-- 第一次构建需要联网下载 WebView2 开发库。
-- 仅浏览器预览需要 Node.js。
-
-壁纸覆盖所有扩展显示器，以核显 30fps 为目标。设置预览和分享对应主显示器。
+设置预览和分享对应主显示器。分享的图片和视频使用示例图标和标签色块，保护真实文件名。
 
 ### 从源码运行
 
-在仓库根目录打开 PowerShell：
+在仓库根目录打开 PowerShell，运行：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File host\build.ps1
 .\Start-Forest.cmd
 ```
 
-请保持 `host/` 和 `prototype/` 的相对目录结构，编译结果位于 `host/bin/`。
+首次构建会下载 WebView2 SDK，编译结果位于 `host/bin/`。请保持 `host/` 与 `prototype/` 的相对目录结构。
 
-再次运行 `Start-Forest.cmd` 或双击托盘图标可打开设置。用托盘菜单退出或运行下面的命令，即可恢复 Windows 壁纸。
-
-```powershell
-.\Stop-Forest.cmd
-```
-
-通过启动脚本运行时，本 fork 的设置和日志保存在 `%LOCALAPPDATA%\Sylvaframe`。
-
-### 浏览器预览
-
-```powershell
-node prototype\serve.mjs
-```
-
-打开 **http://localhost:5178/settings.html**。浏览器使用示例图标，真实桌面图标适配需要 Windows 宿主。
-
-### Windows 安装包
+需要构建安装包时，运行：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File tools\build-installer.ps1
 ```
 
-首次构建会下载便携版 NSIS 和微软 WebView2 引导程序，无需安装全局开发工具。产物位于 `dist/`，附 SHA256 校验文件和对应源码 ZIP。
+安装包、文件清单和 SHA-256 校验文件位于 `dist/` 下。
 
-安装包安装到当前用户的 `Programs\Sylvaframe` 目录，无需管理员权限。缺少 WebView2 时需要联网安装；卸载保留用户设置。
+### 浏览器预览
 
-原项目的 Windows 安装包可从其发布页下载。[原仓库的 Deskland Preview 发布页](https://github.com/BLEZZ0102/Deskland/releases/latest)
+安装 Node.js 后，运行 `node prototype\serve.mjs`，打开 [本地设置页](http://localhost:5178/settings.html)。浏览器预览使用示例图标，Windows 宿主会提供真实的桌面图标位置。
 
-### 目录结构
+### 致谢与许可
 
-| 路径 | 用途 |
-| --- | --- |
-| `host/` | Windows 宿主、构建脚本与清单 |
-| `prototype/flat.html` | 沙滩主题 |
-| `prototype/meadow.html` | 草地主题 |
-| `prototype/forest.html` | 森林主题 |
-| `prototype/settings.html` | 设置界面 |
-| `prototype/themes.json` | 免费主题完整定义及锁定主题展示信息 |
-| `prototype/share.js` | 隐私保护的图片和动画分享 |
-| `prototype/assets/` | 随附主题图片素材 |
-| `tools/` | 安装包构建工具 |
+感谢 **BLEZZ0102** 和 Deskland 贡献者开源 Windows 壁纸宿主、沙滩和草地主题。[Deskland 原仓库](https://github.com/BLEZZ0102/Deskland)
 
-### 已知限制
-
-- 设置预览和分享对应主显示器。
-- 使用 Windows 聚焦或壁纸幻灯片时，系统换图可能造成短暂闪烁。
-- 体验版不包含账号登录、购买恢复、自动更新或其他主题实现。
-
-### 许可与反馈
-
-项目源码和随附主题素材按 [GPL-3.0](LICENSE) 发布，第三方依赖见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
-
-Deskland 名称与图标不作为商标授权授予；修改版应使用自己的名称和图标，详见 [TRADEMARKS.md](TRADEMARKS.md)。
-
-欢迎在本 fork 的 Issues 反馈 Sylvaframe 的问题和建议。[Sylvaframe Issues](https://github.com/XiaoyuZhuang/Deskland/issues)
+项目按 [GPL-3.0](LICENSE) 发布。参见[第三方依赖说明](THIRD_PARTY_NOTICES.md)、[商标说明](TRADEMARKS.md)和[本 fork 的反馈页面](https://github.com/XiaoyuZhuang/Deskland/issues)。

@@ -39,15 +39,20 @@ $sources = @('.gitattributes', '.gitignore', 'AGENTS.md', 'LICENSE', 'NOTICE', '
     'Start-Forest.cmd', 'Stop-Forest.cmd',
     'host\DesktopHost.cs', 'host\Themes.cs', 'host\Sylvaframe.ico', 'host\README.md', 'host\app.manifest', 'host\build.ps1', 'host\build-icon.ps1', 'host\inspect.ps1',
     'tools\build-installer.ps1', 'tools\installer.nsi', 'tools\version.json')
-$themeFiles = @('flat.html', 'meadow.html', 'forest.html', 'forest.js', 'forest-scene.js', 'settings.html', 'thumbs-data.js', 'share.js', 'serve.mjs', 'themes.json', 'beach-palms.js', 'meadow-boy.js', 'meadow-cat.js',
+$themeFiles = @('flat.html', 'meadow.html', 'forest.html', 'forest.css', 'forest.js', 'forest-scene.js', 'lotus.html', 'lotus.js', 'pinkforest.html', 'pinkforest-scene.js',
+    'worldmap.html', 'worldmap-terrain.js', 'worldmap-scene.js',
+    'scenery.js', 'island-scenes.js', 'sky-scene.js', 'city-scene.js', 'meadow-clouds.js',
+    'ocean.html', 'maldives.html', 'sky.html', 'handdrawn-city.html', 'nauticalmap.html',
+    'settings.html', 'thumbs-data.js', 'share.js', 'serve.mjs', 'themes.json', 'beach-palms.js', 'meadow-boy.js', 'meadow-cat.js',
     'i18n\en.json', 'i18n\zh-CN.json', 'thumbs\beach.webp', 'thumbs\meadow.webp',
     'assets\beach-coconut-palm-v2.png', 'assets\beach-coconut-palm-curved.png', 'assets\beach-coconut-palm-airy.png', 'assets\beach-coconut-palm-windswept.png', 'assets\beach-coconut-palm-arch.png',
     'assets\sylvaframe.png', 'assets\meadow-black-kitten.png', 'assets\meadow-kite-boy-level-face.png', 'assets\meadow-kite-boy-diagonal-run.png')
 $themes = (Get-Content -LiteralPath (Join-Path $root 'prototype\themes.json') -Raw -Encoding UTF8 | ConvertFrom-Json).themes
 $ready = @($themes | Where-Object { $_.status -eq 'ready' })
 $locked = @($themes | Where-Object { $_.locked -eq $true })
-if ($themes.Count -ne 13 -or $ready.Count -ne 3 -or $locked.Count -ne 10 -or (($ready.id | Sort-Object) -join ',' -ne 'beach,forest,meadow')) {
-    throw 'Expected three usable themes and ten locked preview cards'
+if ($themes.Count -ne 13 -or $ready.Count -ne 11 -or $locked.Count -ne 2 -or
+    (($ready.id | Sort-Object) -join ',' -ne 'beach,beach-turquoise,forest,lotus,map,meadow,nauticalmap,ocean,pinkforest,sky,worldmap')) {
+    throw 'Expected eleven usable themes and two locked preview cards'
 }
 foreach ($theme in $locked) {
     if ($theme.page -or $theme.groups) { throw 'Locked themes must not contain page source or settings' }

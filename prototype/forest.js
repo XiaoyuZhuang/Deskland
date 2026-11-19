@@ -1,4 +1,4 @@
-/* Keep the shared export script's draw, canvas and icon interface. */
+/* Canvas wallpaper adapter. Keep the draw, canvas and icon interface used by share.js. */
 const QS = new URLSearchParams(location.search);
 const WALL = QS.has('wallpaper');
 const PREVIEW = QS.has('preview');
@@ -6,9 +6,12 @@ const ART_ONLY = QS.has('art');
 const cv = document.getElementById('forest');
 const ctx = cv.getContext('2d', { alpha: false });
 const iconLayer = document.getElementById('icons');
-const scene = new ForestScene();
-const DEFAULTS = Object.freeze({ seed: 513070, sigma: 45, density: 0.80, wind: 1, stream: 1, adaptive: 1 });
-const ranges = { sigma: [0, 150], density: [0.30, 1], wind: [0, 2], stream: [0.60, 1.60] };
+const { scene, defaults: DEFAULTS, ranges, rebuildOn = [], demoHint = 'Drag an icon to move its clearing' } = window.wallpaperScene || {
+  scene: new ForestScene(),
+  defaults: { seed: 513070, sigma: 45, density: 0.80, wind: 1, stream: 1, adaptive: 1 },
+  ranges: { sigma: [0, 150], density: [0.30, 1], wind: [0, 2], stream: [0.60, 1.60] },
+  rebuildOn: ['stream'],
+};
 const params = { ...DEFAULTS };
 const demoMode = !WALL && !PREVIEW && !ART_ONLY;
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
@@ -49,7 +52,7 @@ function frame(now) {
 
 function commit(snap = false) {
   scene.setLayout(params.adaptive ? icons : [], params.sigma, params.density,
-    snap || paused || reducedMotion.matches);
+    snap || paused || reducedMotion.matches, params);
   repaint();
 }
 
@@ -90,7 +93,7 @@ function applySettings(values, reset) {
   }
   const changed = Object.keys(clean).filter(key => clean[key] !== params[key]);
   Object.assign(params, clean);
-  if (changed.includes('seed') || changed.includes('stream')) build();
+  if (changed.includes('seed') || rebuildOn.some(key => changed.includes(key))) build();
   else if (changed.some(key => key !== 'wind')) commit();
   else if (changed.length) repaint();
 }
@@ -197,7 +200,7 @@ function addDemoIcons() {
     toggle.setAttribute('aria-pressed', String(paused));
   };
   toggle.addEventListener('click', () => { paused = !paused; update(); repaint(); });
-  if (english) document.getElementById('demo-hint').textContent = 'Drag an icon to move its clearing';
+  if (english) document.getElementById('demo-hint').textContent = demoHint;
   update();
   document.getElementById('demo').hidden = false;
 }

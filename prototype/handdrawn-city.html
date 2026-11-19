@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>手绘城市 · Sylvaframe</title>
+  <link rel="icon" type="image/png" href="assets/sylvaframe.png">
+  <link rel="stylesheet" href="forest.css">
+  <style>
+    :root { --forest-bg: #eee2b9; --icon-color: #4c4536; --icon-shadow: 0 1px 2px #fff;
+      --icon-border: #4c453680; --icon-hover: #fff6db55; --ghost-label: #4c4536a0; --demo-bg: #4c4536eb; }
+  </style>
+</head>
+<body data-scene="handdrawn-city">
+  <canvas id="forest" aria-hidden="true"></canvas>
+  <div id="icons"></div>
+  <div id="demo" hidden>
+    <span id="demo-hint">拖动示例图标，移动草坪并改变运河路线</span>
+    <button type="button" id="toggle-motion">暂停动画</button>
+  </div>
+  <script src="worldmap-terrain.js"></script>
+  <script src="scenery.js"></script>
+  <script src="city-scene.js"></script>
+  <script src="forest.js"></script>
+  <script src="share.js"></script>
+</body>
+</html>

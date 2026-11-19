@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>老地图 · Sylvaframe</title>
+  <link rel="icon" type="image/png" href="assets/sylvaframe.png">
+  <link rel="stylesheet" href="forest.css">
+  <style>
+    :root { --forest-bg: #d6bd8d; --icon-color: #432d1e; --icon-shadow: 0 1px 2px #f9edcb;
+      --icon-border: #926b4480; --icon-hover: #fbecbb50; --ghost-label: #775438a0; --demo-bg: #634a34ea; }
+  </style>
+</head>
+<body>
+  <canvas id="forest" aria-hidden="true"></canvas>
+  <div id="icons"></div>
+  <div id="demo" hidden>
+    <span id="demo-hint">拖动示例图标，改变海岸线</span>
+    <button type="button" id="toggle-motion">暂停动画</button>
+  </div>
+  <script src="worldmap-terrain.js"></script>
+  <script src="worldmap-scene.js"></script>
+  <script src="forest.js"></script>
+  <script src="share.js"></script>
+</body>
+</html>

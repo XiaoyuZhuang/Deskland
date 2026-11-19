@@ -104,7 +104,7 @@
     "comingSoon": "Coming soon:",
     "purchaseTitle": "Wallpaper edition",
     "purchaseTheme": "“{name}” is included in the original Deskland Wallpaper edition.",
-    "purchaseMessage": "Sylvaframe includes Forest, Beach and Meadow. The original Deskland Wallpaper edition has additional themes.",
+    "purchaseMessage": "The original Deskland Wallpaper edition offers additional themes.",
     "purchaseLater": "Keep exploring",
     "purchaseWebsite": "Visit the upstream website"
   },
@@ -138,25 +138,25 @@
       "desc": "Lotus leaves and blossoms fill the pond, with koi swimming between the leaves and icons and leaving ripples",
       "groups": [
         "Around icons",
-        "Details"
+        "Lotus and koi"
       ],
       "params": {
         "density": {
           "label": "Lotus leaf density",
-          "hint": "How much of the water is covered by leaves; 100% is the original density, 0 hides leaves and their flowers"
+          "hint": "How densely the leaves grow. Set to 0 to hide leaves and flowers"
         },
         "sigma": {
           "label": "Open water",
-          "hint": "How much open water surrounds your icons"
+          "hint": "How much extra open water surrounds your icons and their labels"
         },
         "fish": {
           "label": "Koi",
-          "hint": "Koi swimming between lotus leaves and icons",
+          "hint": "Koi swimming through the water and leaving ripples",
           "unit": ""
         },
         "flowers": {
           "label": "Lotus flowers",
-          "hint": "The amount of lotus blossoms, buds and water lilies"
+          "hint": "How many lotus blossoms appear among the leaves"
         }
       }
     },
@@ -198,52 +198,29 @@
     },
     "beach-turquoise": {
       "name": "Maldives",
-      "desc": "Turquoise water and pale beige sand, with schools of little fish swimming between dark coral reefs",
+      "desc": "Pale sand islands gather around your icons, with mint shallows and schools of fish swimming past reefs.",
       "groups": [
-        "Shoreline",
-        "Water",
-        "Details"
+        "Around icons",
+        "Islands and lagoons"
       ],
       "params": {
-        "fishSchools": {
-          "label": "Fish schools",
-          "hint": "Number of dense fish schools swimming in deep water; set to 0 to hide",
-          "unit": ""
+        "sigma": {
+          "label": "Island size",
+          "hint": "How far land extends beyond desktop icons and their labels"
         },
         "palms": {
           "label": "Coconut palms",
-          "hint": "Number of coastal palms; 0 to hide. Fewer appear if there is not enough sand.",
+          "hint": "Palms appear where there is space on the sand",
           "unit": ""
         },
-        "sigma": {
-          "label": "Distance from icons",
-          "hint": "How far the shoreline sits from your icons"
-        },
-        "warp": {
-          "label": "Winding coast",
-          "hint": "How much the shoreline twists and turns"
-        },
-        "shoal": {
-          "label": "Clear shallows",
-          "hint": "How wide the see-through water over the sand is"
-        },
-        "shallow": {
-          "label": "Shallow sea",
-          "hint": "The distance from pale mint shallows to deep turquoise"
-        },
-        "kayaks": {
-          "label": "Kayaks",
+        "fishSchools": {
+          "label": "Fish schools",
+          "hint": "Schools swimming offshore",
           "unit": ""
         },
-        "birds": {
-          "label": "Seabirds",
-          "hint": "Gulls gliding and circling overhead",
-          "unit": ""
-        },
-        "turtles": {
-          "label": "Sea turtles",
-          "hint": "Slowly swimming sea turtles; set to 0 to hide",
-          "unit": ""
+        "wind": {
+          "label": "Animation speed",
+          "hint": "Set to 0 to pause the scenery"
         }
       }
     },
@@ -290,99 +267,63 @@
     },
     "sky": {
       "name": "Sky",
-      "desc": "A cartoon blue sky where your icons sit on puffy round clouds — day, dusk or night",
+      "desc": "Puffy clouds hold your icons, with drifting clouds and a small plane in a day, dusk, or night sky.",
       "groups": [
-        "Time of day",
         "Around icons",
-        "Clouds",
-        "Details"
+        "Sky"
       ],
       "params": {
+        "sigma": {
+          "label": "Cloud size",
+          "hint": "How far the cloud spreads around icons and their labels"
+        },
         "time": {
           "label": "Time of day",
-          "hint": "Follow the clock: dawn at 6:00, day at 7:00, dusk at 17:30, night at 19:00",
           "options": [
-            "Auto",
             "Day",
             "Dusk",
             "Night"
           ]
         },
-        "sigma": {
-          "label": "Cloud size",
-          "hint": "How far the clouds spread out from your icons"
-        },
         "cover": {
-          "label": "Clouds in the sky",
-          "hint": "How many clouds drift across the open sky"
-        },
-        "flow": {
-          "label": "Drift speed",
-          "hint": "How fast the clouds drift and their puffs change"
-        },
-        "birds": {
-          "label": "Birds",
-          "hint": "They don't fly at night",
-          "unit": ""
+          "label": "Cloud cover",
+          "hint": "How many clouds drift across open sky"
         },
         "plane": {
           "label": "Plane",
-          "hint": "A little plane trails across the top of the screen",
+          "hint": "A small plane crossing the sky during the day or at dusk",
           "options": [
-            "Never",
-            "Now and then",
+            "Off",
+            "Sometimes",
             "Often"
           ]
         },
-        "moon": {
-          "label": "Moon",
-          "hint": "The moon and moonlight at night",
-          "options": [
-            "Off",
-            "On"
-          ]
-        },
-        "stars": {
-          "label": "Star size",
-          "hint": "Stars at night; turn it up for bright stars with cross-shaped sparkles"
+        "wind": {
+          "label": "Animation speed",
+          "hint": "Set to 0 to pause the scenery"
         }
       }
     },
     "ocean": {
       "name": "Ocean",
-      "desc": "Looking down on a blue ocean — your icons hide in white clouds whose shadows fall on the sea",
+      "desc": "A deep blue ocean with green islands around your icons and white sailboats on open water.",
       "groups": [
         "Around icons",
-        "Clouds",
-        "Details"
+        "Open water"
       ],
       "params": {
         "sigma": {
-          "label": "Cloud size",
-          "hint": "How far the clouds around your icons spread out"
-        },
-        "cover": {
-          "label": "Clouds over the sea",
-          "hint": "How many clouds drift over the open sea"
-        },
-        "flow": {
-          "label": "Drift speed",
-          "hint": "How fast the clouds drift and their puffs change"
+          "label": "Island size",
+          "hint": "How far land extends beyond desktop icons and their labels"
         },
         "boats": {
           "label": "Sailboats",
-          "hint": "White and gray sailboats sailing slowly across open water",
+          "hint": "White sailboats crossing between islands",
           "unit": ""
         },
-        "yachts": {
-          "label": "Yachts",
-          "hint": "White and gray yachts with dark gray windows, pale gray seats and foamy wakes",
-          "unit": ""
-        },
-        "birds": {
-          "label": "Seabirds",
-          "hint": "White gulls gliding and circling over the sea",
-          "unit": ""
+        "wind": {
+          "label": "Animation speed",
+          "hint": "Set to 0 to pause the scenery"
         }
       }
     },
@@ -456,40 +397,48 @@
       "groups": [
         "Around icons",
         "Trees",
-        "Details"
+        "Birds"
       ],
       "params": {
         "sigma": {
           "label": "Clearing size",
           "hint": "How big the clearing around your icons is, and how far away the trees stand"
         },
+        "density": {
+          "label": "Tree density",
+          "hint": "How densely the trees grow outside icon clearings"
+        },
         "wind": {
-          "label": "Wind",
-          "hint": "How much the treetops sway; 0 means no wind"
+          "label": "Animation speed",
+          "hint": "How fast the treetops sway and birds fly. Set to 0 to pause animation"
         },
         "birds": {
           "label": "Birds",
-          "hint": "Little ink birds, mostly perched on treetops, now and then flying to a nearby tree",
+          "hint": "Little ink birds perch on treetops and occasionally fly to another tree",
           "unit": ""
         }
       }
     },
     "map": {
       "name": "Hand-drawn City",
-      "desc": "A bird's-eye map of an old town: rows of ink-drawn houses line the streets, and your icons sit in the squares",
+      "desc": "An ink-drawn town with lawns around your icons and boats following canals that bend around them.",
       "groups": [
         "Around icons",
         "Town"
       ],
       "params": {
         "sigma": {
-          "label": "Square size",
-          "hint": "How big the open squares around your icons are"
+          "label": "Lawn size",
+          "hint": "How far the grass extends around your icons and their labels"
         },
         "canals": {
           "label": "Canals",
-          "hint": "How many canals cross the town, with little boats drifting along",
+          "hint": "Canals route around icons so little boats have a continuous course",
           "unit": ""
+        },
+        "wind": {
+          "label": "Animation speed",
+          "hint": "Set to 0 to pause the scenery"
         }
       }
     },
@@ -511,12 +460,12 @@
       "desc": "A parchment continent: icons become seas, dotted roads link towns, and horse-drawn wagons carry supplies between them",
       "groups": [
         "Around icons",
-        "Details"
+        "Ships and wagons"
       ],
       "params": {
         "sigma": {
           "label": "Sea size",
-          "hint": "How much sea surrounds your icons"
+          "hint": "How far the coast stands from desktop icons and their labels"
         },
         "ships": {
           "label": "Sailing ships",
@@ -525,27 +474,35 @@
         },
         "wagons": {
           "label": "Trade wagons",
-          "hint": "Wagons carry crates and grain sacks between towns; set to 0 to hide them",
+          "hint": "How many horse-drawn wagons carry goods between towns",
           "unit": ""
+        },
+        "wind": {
+          "label": "Animation speed",
+          "hint": "How quickly ships rock and wagons travel. Set to 0 to pause animation"
         }
       }
     },
     "nauticalmap": {
       "name": "Nautical Chart",
-      "desc": "A parchment sea chart with coastal ports and lighthouses, winding sea routes, sailing ships and hand-drawn sea monsters",
+      "desc": "A parchment sea chart with islands around your icons, coastal ports, lighthouses, sailing routes, and a sea monster.",
       "groups": [
         "Around icons",
-        "Details"
+        "Navigation"
       ],
       "params": {
         "sigma": {
-          "label": "Land size",
-          "hint": "How far the land extends around your icons"
+          "label": "Island size",
+          "hint": "How far land extends beyond desktop icons and their labels"
         },
         "ships": {
           "label": "Sailing ships",
-          "hint": "Hand-drawn galleons, schooners and cutters gently bobbing between the islands",
+          "hint": "Sailing ships travelling or rocking between the islands",
           "unit": ""
+        },
+        "wind": {
+          "label": "Animation speed",
+          "hint": "Set to 0 to pause the scenery"
         }
       }
     }
